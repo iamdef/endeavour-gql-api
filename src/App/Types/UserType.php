@@ -7,7 +7,6 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 use App\DB\Database;
-use App\Types;
 use GraphQL\Type\Definition\ObjectType;
 use App\Types\TypesRegistry;
 
@@ -19,7 +18,7 @@ class UserType extends ObjectType {
             'fields' => function() {
                 return [
                     'id' => [
-                        'type' => TypesRegistry::string(),
+                        'type' => TypesRegistry::id(),
                         'description' => 'Идентификатор пользователя'
                     ],
                     'username' => [

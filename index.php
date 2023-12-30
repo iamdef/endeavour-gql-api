@@ -27,12 +27,13 @@ try {
     $rawInput = file_get_contents('php://input');
     $input = json_decode($rawInput, true);
     $query = $input['query'];
+    $variables = $input['variables'];
 
     $schema = new Schema([
         'query' => TypesRegistry::query()
     ]);
 
-    $result = GraphQL::executeQuery($schema, $query);
+    $result = GraphQL::executeQuery($schema, $query, null, null, $variables);
     $output = $result->toArray();
 
 } catch(\Exception $e) {

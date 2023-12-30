@@ -7,6 +7,7 @@ use App\Types\TypesRegistry;
 
 use GraphQL\Type\Definition\ObjectType;
 
+
 class QueryType extends ObjectType
 {
     public function __construct()
@@ -18,7 +19,7 @@ class QueryType extends ObjectType
                         'type' => TypesRegistry::user(),
                         'description' => 'Возвращает пользователя по id',
                         'args' => [
-                            'id' => TypesRegistry::int()
+                            'id' => TypesRegistry::id()
                         ],
                         'resolve' => function ($root, $args) {
                             return Database::selectOne("SELECT * from user WHERE id = (?)", [$args['id']]);

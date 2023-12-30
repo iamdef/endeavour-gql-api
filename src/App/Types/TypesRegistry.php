@@ -27,6 +27,10 @@ class TypesRegistry {
         return Type::int();
     }
 
+    public static function id() {
+        return Type::id();
+    }
+
     public static function listOf($type) {
         return Type::listOf($type);
     }
