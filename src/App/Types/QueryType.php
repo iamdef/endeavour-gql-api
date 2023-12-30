@@ -21,7 +21,7 @@ class QueryType extends ObjectType
                             'id' => TypesRegistry::int()
                         ],
                         'resolve' => function ($root, $args) {
-                            return Database::selectOne("SELECT * from user WHERE id = {$args['id']}");
+                            return Database::selectOne("SELECT * from user WHERE id = (?)", [$args['id']]);
                         }
                     ],
                     'allUsers' => [
