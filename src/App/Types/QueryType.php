@@ -2,10 +2,12 @@
 
 namespace App\Types;
 
+use GraphQL\Type\Definition\ObjectType;
+
 use App\DB\Database;
 use App\Types\TypesRegistry;
+use App\Resolvers\UserResolver;
 
-use GraphQL\Type\Definition\ObjectType;
 
 
 class QueryType extends ObjectType
@@ -22,14 +24,14 @@ class QueryType extends ObjectType
                             'id' => TypesRegistry::id()
                         ],
                         'resolve' => function ($root, $args) {
-                            return Database::selectOne("SELECT * from user WHERE id = (?)", [$args['id']]);
+                            return UserResolver::getUserById($args['id']);
                         }
                     ],
                     'allUsers' => [
                         'type' => TypesRegistry::listOf(TypesRegistry::user()),
                         'description' => 'Список пользователей',
                         'resolve' => function () {
-                            return Database::select('SELECT * from user');
+                            return UserResolver::getAllUsers();
                         }
                     ]
                 ];

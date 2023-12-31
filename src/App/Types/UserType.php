@@ -6,9 +6,11 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-use App\DB\Database;
 use GraphQL\Type\Definition\ObjectType;
+
+use App\DB\Database;
 use App\Types\TypesRegistry;
+use App\Resolvers\UserResolver;
 
 
 class UserType extends ObjectType {
@@ -37,11 +39,7 @@ class UserType extends ObjectType {
                         'type' => TypesRegistry::listOf(TypesRegistry::string()),
                         'description' => 'Роли пользователя',
                         'resolve' => function ($root) {
-                            $rolesData = Database::select("SELECT ur.role_id, r.role_name FROM user u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.role_id WHERE u.id = (?)", [$root->id]);
-                            $roles = array_map(function ($roleData) {
-                                return $roleData->role_name;
-                            }, $rolesData);
-                            return $roles;
+                            return UserResolver::getUserRoles($root->id);
                         }
                     ],
                 ];
