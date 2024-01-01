@@ -43,7 +43,9 @@ class UserResolver
 
         if(!$result) return ["user" => null, "success"=> $result];
 
-        return ["user" => $user_data, "success"=> $result];
+        $AT = Token::generateJWToken($user_data->id);
+
+        return ["success"=> $result, "user" => $user_data, "token" => $AT];
 
     }
 }

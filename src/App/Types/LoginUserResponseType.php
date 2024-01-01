@@ -26,6 +26,10 @@ class LoginUserResponseType extends ObjectType {
                     'success' => [
                         'type' => TypesRegistry::boolean(),
                         'description' => 'Статус входа'
+                    ],
+                    'token' => [
+                        'type' => TypesRegistry::string(),
+                        'description' => 'Токен доступа'
                     ]
                 ];
             }
