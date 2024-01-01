@@ -3,6 +3,7 @@
 namespace App\Resolvers;
 
 use App\DB\Database;
+use App\utils\Token;
 
 class UserResolver
 {
