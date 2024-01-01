@@ -25,4 +25,24 @@ class UserResolver
         return $roles;
     }
 
+    public static function loginUser($username, $password)
+    {
+        $query = "SELECT user.*, accountconfirm.salt
+                FROM user
+                LEFT JOIN accountconfirm ON user.id = accountconfirm.user_id
+                WHERE user.username = ?";
+        
+        $user_data = Database::selectOne($query, [$username]);
+
+        if (!$user_data) return ["user" => null, "success"=> false];
+
+        $salt = $user_data->salt;
+        $hashed_password = hash('sha256', $salt.$password);
+        $result = $user_data->password === $hashed_password;
+
+        if(!$result) return ["user" => null, "success"=> $result];
+
+        return ["user" => $user_data, "success"=> $result];
+
+    }
 }

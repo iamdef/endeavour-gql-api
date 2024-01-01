@@ -4,4 +4,4 @@ This API is designed for an esports club React app to extract data from a MySQL 
 
 ## Authors
 
-- [@iamdef](https://www.github.com/iamef)
+- [@iamdef](https://www.github.com/iamdef)

@@ -4,11 +4,14 @@ namespace App\Types;
 use GraphQL\Type\Definition\Type;
 
 use App\Types\QueryType;
+use App\Types\MutationType;
 use App\Types\UserType;
+use App\Types\LoginUserResponseType;
 
 class TypesRegistry {
 
     private static $query;
+    private static $mutation;
     private static $user;
 
     public function path() {
@@ -17,6 +20,10 @@ class TypesRegistry {
 
     public static function query() {
         return self::$query ?: (self::$query = new QueryType());
+    }
+
+    public static function mutation() {
+        return self::$mutation ?: (self::$mutation = new MutationType());
     }
 
     public static function string() {
@@ -35,7 +42,22 @@ class TypesRegistry {
         return Type::listOf($type);
     }
 
-    public static function user() {
-    return self::$user ?: (self::$user = new UserType());
+    public static function boolean() {
+        return Type::boolean();
     }
+
+    public static function nonull() {
+        return Type::nonNull();
+    }
+
+    // custom types
+
+    public static function user() {
+        return self::$user ?: (self::$user = new UserType());
+    }    
+
+    public static function loginUserResponse() {
+        return new LoginUserResponseType;
+    }    
+
 }

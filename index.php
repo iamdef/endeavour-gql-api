@@ -14,14 +14,14 @@ use App\DB\Database;
 $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
+$config = [
+    'host' => $_ENV['DB_SERVERNAME'],
+    'database' => $_ENV['DB_NAME'],
+    'username' => $_ENV['DB_USERNAME'],
+    'password' => $_ENV['DB_PASSWORD']
+];
+
 try {
-    $config = [
-        'host' => $_ENV['DB_SERVERNAME'],
-        'database' => $_ENV['DB_NAME'],
-        'username' => $_ENV['DB_USERNAME'],
-        'password' => $_ENV['DB_PASSWORD']
-    ];
-    
     Database::init($config);
 
     $rawInput = file_get_contents('php://input');
@@ -30,7 +30,8 @@ try {
     $variables = $input['variables'];
 
     $schema = new Schema([
-        'query' => TypesRegistry::query()
+        'query' => TypesRegistry::query(),
+        'mutation' => TypesRegistry::mutation()
     ]);
 
     $result = GraphQL::executeQuery($schema, $query, null, null, $variables);
