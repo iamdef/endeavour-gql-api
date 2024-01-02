@@ -1,3 +1,4 @@
 .env
+test.php
 /vendor
 src/App/utils/Token.php

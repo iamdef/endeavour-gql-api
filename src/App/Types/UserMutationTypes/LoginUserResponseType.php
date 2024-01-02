@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Types;
+namespace App\Types\UserMutationTypes;
 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -8,7 +8,6 @@ error_reporting(E_ALL);
 
 use GraphQL\Type\Definition\ObjectType;
 
-use App\DB\Database;
 use App\Types\TypesRegistry;
 use App\Resolvers\UserResolver;
 
@@ -16,7 +15,7 @@ use App\Resolvers\UserResolver;
 class LoginUserResponseType extends ObjectType {
     public function __construct() {
         $config = [
-            'description' => 'Тип объекта, возвращаемого при входе в приложение',
+            'description' => 'Тип объекта, возвращаемого при входе в учётную запись',
             'fields' => function() {
                 return [
                     'user' => [
@@ -30,7 +29,11 @@ class LoginUserResponseType extends ObjectType {
                     'token' => [
                         'type' => TypesRegistry::string(),
                         'description' => 'Токен доступа'
-                    ]
+                    ],
+                    'message' => [
+                        'type' => TypesRegistry::string(),
+                        'description' => 'Сообщение о статусе входа'
+                    ],
                 ];
             }
         ];

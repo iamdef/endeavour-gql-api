@@ -6,7 +6,9 @@ use GraphQL\Type\Definition\Type;
 use App\Types\QueryType;
 use App\Types\MutationType;
 use App\Types\UserType;
-use App\Types\LoginUserResponseType;
+use App\Types\UserMutationTypes\LoginUserResponseType;
+use App\Types\UserMutationTypes\LogoutUserResponseType;
+use App\Types\UserMutationTypes\AuthUserResponseType;
 
 class TypesRegistry {
 
@@ -58,6 +60,14 @@ class TypesRegistry {
 
     public static function loginUserResponse() {
         return new LoginUserResponseType;
-    }    
+    }
+    
+    public static function logoutUserResponse() {
+        return new LogoutUserResponseType;
+    }  
+
+    public static function authUserResponse() {
+        return new AuthUserResponseType;
+    }  
 
 }
