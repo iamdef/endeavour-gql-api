@@ -2,3 +2,4 @@
 test.php
 /vendor
 src/App/utils/Token.php
+src/App/utils/Email.php

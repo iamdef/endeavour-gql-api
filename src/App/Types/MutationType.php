@@ -23,7 +23,7 @@ class MutationType extends ObjectType
                 return [
                     'loginUser' => [
                         'type' => TypesRegistry::loginUserResponse(),
-                        'description' => 'Логинит пользователя',
+                        'description' => 'Logs in the account',
                         'args' => [
                             'username' => TypesRegistry::string(),
                             'password' => TypesRegistry::string()
@@ -34,16 +34,47 @@ class MutationType extends ObjectType
                     ],
                     'logoutUser' => [
                         'type' => TypesRegistry::logoutUserResponse(),
-                        'description' => 'Разлогинивает пользователя',
+                        'description' => 'Logs out the account',
                         'resolve' => function ($root, $args) {
                             return UserResolver::logoutUser();
                         }
                     ],
                     'authUser' => [
                         'type' => TypesRegistry::authUserResponse(),
-                        'description' => 'Авторизовывает пользователя',
+                        'description' => 'Authorizes the user',
                         'resolve' => function ($root, $args) {
                             return UserResolver::authUser();
+                        }
+                    ],
+                    'registerUser' => [
+                        'type' => TypesRegistry::registerUserResponse(),
+                        'description' => 'Registers the user',
+                        'args' => [
+                            'data' => TypesRegistry::inputRegister()
+                        ],
+                        'resolve' => function ($root, $args) {
+                            return UserResolver::registerUser($args['data']);
+                        }
+                    ],
+                    'activateUser' => [
+                        'type' => TypesRegistry::activateUserResponse(),
+                        'description' => 'Activates the user',
+                        'args' => [
+                            'token' => TypesRegistry::string(),
+                            'code' => TypesRegistry::string()
+                        ],
+                        'resolve' => function ($root, $args) {
+                            return UserResolver::activateUser($args['token'], $args['code']);
+                        }
+                    ],
+                    'deleteUser' => [
+                        'type' => TypesRegistry::deleteUserResponse(),
+                        'description' => 'Registers the user',
+                        'args' => [
+                            'email' => TypesRegistry::string()
+                        ],
+                        'resolve' => function ($root, $args) {
+                            return UserResolver::deleteUser($args['email']);
                         }
                     ],
 

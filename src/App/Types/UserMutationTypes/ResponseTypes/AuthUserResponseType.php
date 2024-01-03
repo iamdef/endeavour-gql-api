@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Types\UserMutationTypes;
+namespace App\Types\UserMutationTypes\ResponseTypes;
 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -12,27 +12,27 @@ use App\Types\TypesRegistry;
 use App\Resolvers\UserResolver;
 
 
-class LoginUserResponseType extends ObjectType {
+class AuthUserResponseType extends ObjectType {
     public function __construct() {
         $config = [
-            'description' => 'Тип объекта, возвращаемого при входе в учётную запись',
+            'description' => 'The type of object returned during authorization via tokens',
             'fields' => function() {
                 return [
                     'user' => [
                         'type' => TypesRegistry::user(),
-                        'description' => 'Данные пользователя'
+                        'description' => 'User data'
                     ],
                     'success' => [
                         'type' => TypesRegistry::boolean(),
-                        'description' => 'Статус входа'
+                        'description' => 'Authorization status'
                     ],
                     'token' => [
                         'type' => TypesRegistry::string(),
-                        'description' => 'Токен доступа'
+                        'description' => 'Access token'
                     ],
                     'message' => [
                         'type' => TypesRegistry::string(),
-                        'description' => 'Сообщение о статусе входа'
+                        'description' => 'Authorization status message'
                     ],
                 ];
             }

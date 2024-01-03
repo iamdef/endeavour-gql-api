@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Types\UserMutationTypes;
+namespace App\Types\UserMutationTypes\ResponseTypes;
 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -12,20 +12,24 @@ use App\Types\TypesRegistry;
 use App\Resolvers\UserResolver;
 
 
-class LogoutUserResponseType extends ObjectType {
+class RegisterUserResponseType extends ObjectType {
     public function __construct() {
         $config = [
-            'description' => 'Тип объекта, возвращаемого при выходе из учётной записи',
+            'description' => 'The type of object returned during registration',
             'fields' => function() {
                 return [
+                    'email' => [
+                        'type' => TypesRegistry::string(),
+                        'description' => 'User email'
+                    ],
                     'success' => [
                         'type' => TypesRegistry::boolean(),
-                        'description' => 'Статус выхода'
+                        'description' => 'Registration status'
                     ],
                     'message' => [
                         'type' => TypesRegistry::string(),
-                        'description' => 'Сообщение о статусе выхода'
-                    ]
+                        'description' => 'Registration status message'
+                    ],
                 ];
             }
         ];

@@ -2,13 +2,19 @@
 namespace App\Types;
 
 use GraphQL\Type\Definition\Type;
+use GraphQL\Type\Definition\InputObjectType;
 
 use App\Types\QueryType;
 use App\Types\MutationType;
 use App\Types\UserType;
-use App\Types\UserMutationTypes\LoginUserResponseType;
-use App\Types\UserMutationTypes\LogoutUserResponseType;
-use App\Types\UserMutationTypes\AuthUserResponseType;
+use App\Types\UserMutationTypes\ResponseTypes\LoginUserResponseType;
+use App\Types\UserMutationTypes\ResponseTypes\LogoutUserResponseType;
+use App\Types\UserMutationTypes\ResponseTypes\AuthUserResponseType;
+use App\Types\UserMutationTypes\ResponseTypes\RegisterUserResponseType;
+use App\Types\UserMutationTypes\ResponseTypes\DeleteUserResponseType;
+use App\Types\UserMutationTypes\ResponseTypes\ActivateUserResponseType;
+
+use App\Types\UserMutationTypes\InputTypes\InputRegisterType;
 
 class TypesRegistry {
 
@@ -48,8 +54,12 @@ class TypesRegistry {
         return Type::boolean();
     }
 
-    public static function nonull() {
+    public static function noNull() {
         return Type::nonNull();
+    }
+
+    public static function inputRegister() {
+        return new InputRegisterType;
     }
 
     // custom types
@@ -70,4 +80,15 @@ class TypesRegistry {
         return new AuthUserResponseType;
     }  
 
+    public static function registerUserResponse() {
+        return new RegisterUserResponseType;
+    }  
+
+    public static function deleteUserResponse() {
+        return new DeleteUserResponseType;
+    }  
+    
+    public static function activateUserResponse() {
+        return new ActivateUserResponseType;
+    }  
 }
