@@ -33,6 +33,10 @@ class UserResolver
 
     public static function loginUser($username, $password)
     {
+        $is_username_valid = preg_match('/^[a-zA-Z0-9_]+$/', $username) && preg_match('/^.{3,}$/', $username);
+        $is_password_valid = preg_match('/^.{6,}$/', $password);
+
+
         $query = "SELECT user.*, registerconfirm.salt
                 FROM user
                 LEFT JOIN registerconfirm ON user.id = registerconfirm.user_id
@@ -146,6 +150,13 @@ class UserResolver
             return ["success"=> false, "message"=> 'Failed registration'];
         }
 
+        $tokens_id = Database::insert('tokens', [
+            'user_id' => $user_id
+        ]);
+        $roles_id = Database::insert('user_roles', [
+            'user_id' => $user_id
+        ]);
+
         $code = rand(11111, 99999);
         $code_id = Database::insert('registerconfirm', [
             'user_id' => $user_id,
@@ -153,8 +164,8 @@ class UserResolver
             'salt' => $salt
         ]);
 
-        if(!$code_id) {
-            return ["success"=> false, "message"=> 'Failed to generate confirmation code'];
+        if(!$code_id || !$roles_id || $tokens_id) {
+            return ["success"=> false, "message"=> 'The data in the database could not be updated'];
         }
 
         $config = [
@@ -167,7 +178,7 @@ class UserResolver
 
         if (!Email::send($config)) {
             Database::delete('user', ['user_id' => $user_id], ['user_id' => $user_id]);
-            return ["success"=> false, "message"=> 'The email could not be sent'];
+            return ["success"=> false, "message"=> 'The email could not be sent', "email" => $prep_data['email']];
         }
 
         return ["success"=> true, "email" => $prep_data['email'], "message"=> 'Waiting for confirmation via email'];
@@ -175,15 +186,17 @@ class UserResolver
 
     public static function activateUser($token, $code)
     {
-        if (!Token::isTokenValid($token)) return ["success"=> false, "message"=> 'Invalid confirmation token'];
+        if (!Token::isTokenValid($token)) return ["success"=> false, "message"=> 'Invalid token'];
         $user_id = Token::getPayload($token)->user_id;
+        if (!$user_id) return ["success"=> false, "message"=> 'Invalid token'];
         $query_code = "SELECT * FROM registerconfirm WHERE user_id = ?";
         $result_code = Database::selectOne($query_code, [$user_id]);
-        if (!$result_code) return ["success"=> false, "message"=> 'No such a user'];
-        if ($result_code->code != $code) return ["success"=> false, "message"=> 'Invalid confirmation code'];
+        if (!$result_code) return ["success"=> false, "message"=> 'No such user'];
+        if ($result_code->code != $code) return ["success"=> false, "message"=> 'Invalid code'];
 
-        Database::update('user', ['status' => 1], ['id' => $user_id], ['id' => $user_id]);
-        Database::update('registerconfirm', ['code' => rand(11111, 99999)], ['user_id' => $user_id], ['user_id' => $user_id]);
+        $res_user = Database::update('user', ['status' => 1], ['id' => $user_id], ['id' => $user_id]);
+        $res_salt = Database::update('registerconfirm', ['code' => rand(11111, 99999)], ['user_id' => $user_id], ['user_id' => $user_id]);
+        if (!$res_user || !$res_salt) return ["success"=> false, "message"=> 'The data in the database could not be updated'];
         return ["success"=> true, "message"=> 'The user has been successfully activated'];
 
     }
@@ -192,5 +205,54 @@ class UserResolver
     {
         $result = Database::delete('user', ['email' => $email, 'status' => 0], ['email' => $email, 'status' => 0]);
         return $result ? ["success"=> true, "message"=> 'The user has been successfully deleted', 'email' => $email] : ["success"=> false, "message"=> 'The user cannot be deleted', 'email' => $email];
+    }
+
+    public static function resetPassword($username, $email)
+    {
+        $is_username_valid = preg_match('/^[a-zA-Z0-9_]+$/', $username) && preg_match('/^.{3,}$/', $username);
+        $is_email_valid = preg_match('/^[^@\s]+@[^@\s]+\.[^@\s]+$/',$email);
+
+        if (!$is_username_valid || !$is_email_valid) return ["success"=> false, "message"=> 'Invalid credentials', 'email' => $email];
+        
+        $user = Database::selectOne("SELECT * from user WHERE username = ? AND email = ?", [$username, $email]);
+        if(!$user) return ["success"=> false, "message"=> 'No such user', 'email' => $email];
+
+        $token = Token::generateJWToken($user->id, 'reset');
+        $code = Database::selectOne("SELECT * from registerconfirm WHERE user_id = ?", [$user->id])->code;
+        $config = [
+            'user_name' => $username,
+            'user_email' => $email,
+            'type' => 'reset',
+            'token' => $token,
+            'code' => $code,
+        ];
+        if (!Email::send($config)) return ["success"=> false, "message"=> 'The email could not be sent', 'email' => $email];
+
+        return ["success"=> true, "message"=> 'The email with the link to change the password was successfully sent', 'email' => $email];
+    }
+
+    public static function changePassword($data)
+    {
+        if (!Token::isTokenValid($data['token'])) return ["success"=> false, "message"=> 'Invalid token'];
+        
+        $user_id = Token::getPayload($data['token'])->user_id;
+        if (!$user_id) return ["success"=> false, "message"=> 'Invalid token'];
+
+        $is_password_valid = $data['password'] === $data['confirmPassword'] && preg_match('/^.{6,}$/', $data['password']);
+        if (!$is_password_valid) return ["success"=> false, "message"=> 'Invalid credentials'];
+
+        $query_code = "SELECT * FROM registerconfirm WHERE user_id = ?";
+        $result_code = Database::selectOne($query_code, [$user_id]);
+        if (!$result_code) return ["success"=> false, "message"=> 'No such user'];
+        if ($result_code->code != $data['code']) return ["success"=> false, "message"=> 'Invalid code'];
+
+        $bytes = random_bytes(8);
+        $salt = bin2hex($bytes);
+        $new_password = hash('sha256', $salt.$data['password']);
+
+        $res_user = Database::update('user', ['password' => $new_password], ['id' => $user_id], ['id' => $user_id]);
+        $res_salt = Database::update('registerconfirm', ['salt' => $salt, 'code' => rand(11111, 99999)], ['user_id' => $user_id], ['user_id' => $user_id]);
+        if (!$res_user || !$res_salt) return ["success"=> false, "message"=> 'The data in the database could not be updated'];
+        return ["success"=> true, "message"=> 'The password has been successfully changed'];
     }
 }

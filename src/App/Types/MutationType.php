@@ -77,7 +77,27 @@ class MutationType extends ObjectType
                             return UserResolver::deleteUser($args['email']);
                         }
                     ],
-
+                    'resetPassword' => [
+                        'type' => TypesRegistry::resetPasswordResponse(),
+                        'description' => 'Sends an email with a link to reset a password',
+                        'args' => [
+                            'username' => TypesRegistry::string(),
+                            'email' => TypesRegistry::string()
+                        ],
+                        'resolve' => function ($root, $args) {
+                            return UserResolver::resetPassword($args['username'], $args['email']);
+                        }
+                    ],
+                    'changePassword' => [
+                        'type' => TypesRegistry::changePasswordResponse(),
+                        'description' => 'Changes user password',
+                        'args' => [
+                            'data' => TypesRegistry::inputChangePassword()
+                        ],
+                        'resolve' => function ($root, $args) {
+                            return UserResolver::changePassword($args['data']);
+                        }
+                    ],
                 ];
             }
         ];

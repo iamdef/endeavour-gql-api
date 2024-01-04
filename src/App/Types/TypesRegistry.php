@@ -13,8 +13,11 @@ use App\Types\UserMutationTypes\ResponseTypes\AuthUserResponseType;
 use App\Types\UserMutationTypes\ResponseTypes\RegisterUserResponseType;
 use App\Types\UserMutationTypes\ResponseTypes\DeleteUserResponseType;
 use App\Types\UserMutationTypes\ResponseTypes\ActivateUserResponseType;
+use App\Types\UserMutationTypes\ResponseTypes\ResetPasswordResponseType;
+use App\Types\UserMutationTypes\ResponseTypes\ChangePasswordResponseType;
 
 use App\Types\UserMutationTypes\InputTypes\InputRegisterType;
+use App\Types\UserMutationTypes\InputTypes\InputChangePasswordType;
 
 class TypesRegistry {
 
@@ -62,7 +65,11 @@ class TypesRegistry {
         return new InputRegisterType;
     }
 
-    // custom types
+    public static function inputChangePassword() {
+        return new InputChangePasswordType;
+    }
+
+    // custom response types
 
     public static function user() {
         return self::$user ?: (self::$user = new UserType());
@@ -91,4 +98,12 @@ class TypesRegistry {
     public static function activateUserResponse() {
         return new ActivateUserResponseType;
     }  
+
+    public static function resetPasswordResponse() {
+        return new ResetPasswordResponseType;
+    }  
+
+    public static function changePasswordResponse() {
+        return new ChangePasswordResponseType;
+    }
 }

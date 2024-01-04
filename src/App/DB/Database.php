@@ -69,9 +69,10 @@ class Database {
             $params = array_merge($data, $whereParams);
 
             $statement = self::$pdo->prepare($query);
-            $result = $statement->execute($params);
+            $statement->execute($params);
 
-            return $result ? $statement->rowCount() : false;
+            return $statement->rowCount() !== 0;
+
         } catch (PDOException $e) {
             error_log($e->getMessage());
             die();
@@ -91,7 +92,7 @@ class Database {
             $statement = self::$pdo->prepare($query);
             $result = $statement->execute($whereParams);
 
-            return $result ? $statement->rowCount() : false;
+            return $statement->rowCount() !== 0;
         } catch (PDOException $e) {
             error_log($e->getMessage());
             die();
