@@ -6,9 +6,15 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+require_once __DIR__ . '/../../../vendor/autoload.php';
+use Dotenv\Dotenv;
 use App\DB\Database;
 use App\utils\Token;
 use App\utils\Email;
+use App\utils\Curl;
+use App\utils\Validator;
+$dotenv = Dotenv::createImmutable(__DIR__ . '/../../../');
+$dotenv->load();
 
 class UserResolver
 {
@@ -33,9 +39,10 @@ class UserResolver
 
     public static function loginUser($username, $password)
     {
-        $is_username_valid = preg_match('/^[a-zA-Z0-9_]+$/', $username) && preg_match('/^.{3,}$/', $username);
-        $is_password_valid = preg_match('/^.{6,}$/', $password);
+        $is_username_valid = Validator::username($username);
+        $is_password_valid = Validator::password($password);
 
+        if (!$is_username_valid || !$is_password_valid) return ["user" => null, "success"=> false, "message"=> 'Invalid credentials'];
 
         $query = "SELECT user.*, registerconfirm.salt
                 FROM user
@@ -50,7 +57,7 @@ class UserResolver
         $hashed_password = hash('sha256', $salt.$password);
         $result = $user_data->password === $hashed_password;
 
-        if(!$result) return ["user" => null, "success"=> $result, "message"=> 'Invalid credentials'];
+        if(!$result) return ["user" => null, "success"=> false, "message"=> 'Invalid password'];
 
         $AT = Token::generateJWToken($user_data->id);
         $RT = Token::generateJWToken($user_data->id, 'refresh');
@@ -70,32 +77,18 @@ class UserResolver
 
     public static function logoutUser()
     {
-        if (!isset($_COOKIE['NDVR-RT'])) return ["success"=> false, "message"=> 'NDVR-RT has not been received'];
-        $token = $_COOKIE['NDVR-RT'];
-        $is_token_valid = Token::isTokenValid($token);
-        if (!$is_token_valid) return ["success"=> false, "message"=> 'Invalid NDVR-RT'];
-
-        $payload = Token::getPayload($token);
-        $result= Database::update(
-            'tokens',
-            ['token_value' => 'none', 'expires_at' => time() - 3600 * 24 * 30],
-            ['user_id' => $payload->user_id],
-            ['user_id' => $payload->user_id],
-        );
-
-        if (!$result) return ["success"=> false];
-
         setcookie('NDVR-RT', '', time() - 3600 * 24 * 30, "/", "", false, true);
-        return ["success"=> $result, "message"=> 'Successful account logout'];
+        return ["success"=> true, "message"=> 'Successful account logout'];
     }
 
     public static function authUser()
     {
-        if (!isset($_COOKIE['NDVR-RT'])) return ["success"=> false, "message"=> 'NDVR-RT has not been received'];
+        if (!isset($_COOKIE['NDVR-RT'])) return ["success"=> false, "message"=> 'Refresh token has not been received'];
         $refresh_token = $_COOKIE['NDVR-RT'];
         $is_refresh_valid = Token::isTokenValid($refresh_token);
-        if(!$is_refresh_valid) return ["success"=> false, "message"=> 'Invalid NDVR-RT'];
+        if(!$is_refresh_valid) return ["success"=> false, "message"=> 'Invalid refresh token'];
         $user_id = Token::getPayload($refresh_token)->user_id;
+        if(!$user_id) return ["success"=> false, "message"=> 'Invalid refresh token'];
 
         $query = "SELECT * FROM user WHERE id = ?";
 
@@ -108,42 +101,38 @@ class UserResolver
         if($is_access_valid) return ["success"=> true, "user" => $user_data, "message"=> 'Successful authorization'];
 
         $new_access_token = Token::generateJWToken($user_data->id);
-        return ["success"=> true, "user" => $user_data, "token" => $new_access_token, "message"=> 'Successful authorization via NDVR-RT'];
+        return ["success"=> true, "user" => $user_data, "token" => $new_access_token, "message"=> 'Successful authorization via refresh token'];
     }
 
     public static function registerUser($data)
     {
-        $is_username_valid = preg_match('/^[a-zA-Z0-9_]+$/', $data['username']) && preg_match('/^.{3,}$/', $data['username']);
-        $is_email_valid = preg_match('/^[^@\s]+@[^@\s]+\.[^@\s]+$/', $data['email']);
-        $is_password_valid = $data['password'] === $data['confirmPassword'] && preg_match('/^.{6,}$/', $data['password']);
-
-        if (!$is_username_valid || !$is_email_valid || !$is_password_valid) {
-            return ["success"=> false, "message"=> 'Invalid credentials'];
-        }
+        $is_username_valid = Validator::username($data['username']);
+        $is_email_valid = Validator::email($data['email']);
+        $is_password_valid = isset($data['password']) ? Validator::password($data['password']) : (isset($data['discord_id']) ? true : false);
+         
+        if (!$is_username_valid || !$is_email_valid || !$is_password_valid) return ["success"=> false, "message"=> 'Invalid credentials'];
 
         $bytes = random_bytes(8);
         $salt = bin2hex($bytes);
-
-        $prep_data = [
-            'username' => $data['username'],
-            'password' => hash('sha256', $salt.$data['password']),
-            'email' => $data['email'],
-            'status' => 0,
-            'created_date' => date('Y-m-d H:i:s'),
-        ];
+        $password = isset($data['password']) ? hash('sha256', $salt.$data['password']) : null;
+        $avatar = isset($data['avatar']) ? $data['avatar'] : $_ENV['NDVR_USER_AVA'];
+        $status = isset($data['status']) ? $data['status'] : 0;
+        $discord_id = isset($data['discord_id']) ? $data['discord_id'] : null;
 
         $query_exist = "SELECT * FROM user WHERE username = ? OR email = ?";
-
-        $is_user_exist = Database::selectOne($query_exist, [$prep_data['username'], $prep_data['email']]);
+        $is_user_exist = Database::selectOne($query_exist, [$data['username'], $data['email']]);
         if ($is_user_exist) {
             return ["success"=> false, "message"=> 'Such a user already exist'];
         }
 
         $user_id = Database::insert('user', [
-            'username' => $prep_data['username'],
-            'email' => $prep_data['email'],
-            'password' => $prep_data['password'],
-            'created_date' => $prep_data['created_date']
+            'username' => $data['username'],
+            'email' => $data['email'],
+            'password' => $password,
+            'created_date' => date('Y-m-d H:i:s'),
+            'status' => $status,
+            'discord_id' => $discord_id,
+            'avatar' => $avatar
         ]);
 
         if(!$user_id) {
@@ -164,31 +153,37 @@ class UserResolver
             'salt' => $salt
         ]);
 
-        if(!$code_id || !$roles_id || $tokens_id) {
+        if(!$code_id || !$tokens_id) {
+            Database::delete('user', ['id' => $user_id], ['id' => $user_id]);
             return ["success"=> false, "message"=> 'The data in the database could not be updated'];
         }
 
         $config = [
-            'user_name' => $prep_data['username'],
-            'user_email' => $prep_data['email'],
+            'user_name' => $data['username'],
+            'user_email' => $data['email'],
             'type' => 'registration',
             'token' => Token::generateJWToken($user_id, 'register'),
             'code' => $code,
         ];
 
+        // dont send an email if registration via discord
+        if (isset($data['discord_id'])) return ["success"=> true, "email" => $data['email'], "message"=> 'Waiting for confirmation via email'];
+
         if (!Email::send($config)) {
-            Database::delete('user', ['user_id' => $user_id], ['user_id' => $user_id]);
-            return ["success"=> false, "message"=> 'The email could not be sent', "email" => $prep_data['email']];
+            Database::delete('user', ['id' => $user_id], ['id' => $user_id]);
+            return ["success"=> false, "message"=> 'The email could not be sent', "email" => $data['email']];
         }
 
-        return ["success"=> true, "email" => $prep_data['email'], "message"=> 'Waiting for confirmation via email'];
+        return ["success"=> true, "email" => $data['email'], "message"=> 'Waiting for confirmation via email'];
     }
 
     public static function activateUser($token, $code)
     {
         if (!Token::isTokenValid($token)) return ["success"=> false, "message"=> 'Invalid token'];
         $user_id = Token::getPayload($token)->user_id;
-        if (!$user_id) return ["success"=> false, "message"=> 'Invalid token'];
+        $token_type = Token::getPayload($token)->token_type;
+        if (!$user_id || !$token_type === 'register') return ["success"=> false, "message"=> 'Invalid token'];
+
         $query_code = "SELECT * FROM registerconfirm WHERE user_id = ?";
         $result_code = Database::selectOne($query_code, [$user_id]);
         if (!$result_code) return ["success"=> false, "message"=> 'No such user'];
@@ -209,12 +204,12 @@ class UserResolver
 
     public static function resetPassword($username, $email)
     {
-        $is_username_valid = preg_match('/^[a-zA-Z0-9_]+$/', $username) && preg_match('/^.{3,}$/', $username);
-        $is_email_valid = preg_match('/^[^@\s]+@[^@\s]+\.[^@\s]+$/',$email);
+        $is_username_valid = Validator::username($username);
+        $is_email_valid = Validator::email($email);
 
         if (!$is_username_valid || !$is_email_valid) return ["success"=> false, "message"=> 'Invalid credentials', 'email' => $email];
         
-        $user = Database::selectOne("SELECT * from user WHERE username = ? AND email = ?", [$username, $email]);
+        $user = Database::selectOne("SELECT * FROM user WHERE username = ? AND email = ?", [$username, $email]);
         if(!$user) return ["success"=> false, "message"=> 'No such user', 'email' => $email];
 
         $token = Token::generateJWToken($user->id, 'reset');
@@ -236,9 +231,10 @@ class UserResolver
         if (!Token::isTokenValid($data['token'])) return ["success"=> false, "message"=> 'Invalid token'];
         
         $user_id = Token::getPayload($data['token'])->user_id;
-        if (!$user_id) return ["success"=> false, "message"=> 'Invalid token'];
+        $token_type = Token::getPayload($data['token'])->token_type;
+        if (!$user_id || !$token_type === 'reset') return ["success"=> false, "message"=> 'Invalid token'];
 
-        $is_password_valid = $data['password'] === $data['confirmPassword'] && preg_match('/^.{6,}$/', $data['password']);
+        $is_password_valid = $data['password'] === $data['confirmPassword'] && Validator::password($data['password']);;
         if (!$is_password_valid) return ["success"=> false, "message"=> 'Invalid credentials'];
 
         $query_code = "SELECT * FROM registerconfirm WHERE user_id = ?";
@@ -254,5 +250,44 @@ class UserResolver
         $res_salt = Database::update('registerconfirm', ['salt' => $salt, 'code' => rand(11111, 99999)], ['user_id' => $user_id], ['user_id' => $user_id]);
         if (!$res_user || !$res_salt) return ["success"=> false, "message"=> 'The data in the database could not be updated'];
         return ["success"=> true, "message"=> 'The password has been successfully changed'];
+    }
+
+    public static function discordUser($code, $auth_id)
+    {
+        $discord_user_data = Curl::getUserFromDiscord($code);
+        if (!$discord_user_data) return ["success"=> false, "message"=> 'Invalid authorization code'];
+        Database::insert('auth_ids', [
+            'auth_id' => $auth_id
+        ]);
+
+        $user = [
+            'discord_id' => $discord_user_data->id,
+            'username' => $discord_user_data->username,
+            'avatar' => 'https://cdn.discordapp.com/avatars/'.$discord_user_data->id.'/'.$discord_user_data->avatar.'.png',
+            'email' => $discord_user_data->email,
+            'status' => 1,
+            'created_date' => date('Y-m-d H:i:s'),
+        ];
+  
+        $my_user = Database::selectOne("SELECT * FROM user WHERE discord_id = ? OR username = ? OR email = ?", [$user['discord_id'], $user['username'], $user['email']]);
+        if (!$my_user) {
+            $res_reg = self::registerUser($user);
+            if (!$res_reg['success']) return ["success"=> false, "message"=> $res_reg['message']];
+            $my_user = Database::selectOne("SELECT * FROM user WHERE discord_id = ?", [$user['discord_id']]);
+        }
+
+        $AT = Token::generateJWToken($my_user->id);
+        $RT = Token::generateJWToken($my_user->id, 'refresh');
+        $RT_exp = Token::getPayload($RT)->exp;
+
+        Database::update(
+            'tokens',
+            ['token_value' => $RT, 'expires_at' => $RT_exp],
+            ['user_id' => $my_user->id],
+            ['user_id' => $my_user->id],
+        );
+
+        setcookie('NDVR-RT', $RT, time() + 3600 * 24 * 30, "/", "", false, true);
+        return ["success"=> true, "user" => $my_user, "token" => $AT, "message"=> 'Successful account login'];
     }
 }

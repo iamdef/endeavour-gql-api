@@ -56,6 +56,17 @@ class MutationType extends ObjectType
                             return UserResolver::registerUser($args['data']);
                         }
                     ],
+                    'discordUser' => [
+                        'type' => TypesRegistry::discordUserResponse(),
+                        'description' => 'Registers the user and logs in the account via Discord',
+                        'args' => [
+                            'code' => TypesRegistry::string(),
+                            'auth_id' => TypesRegistry::string()
+                        ],
+                        'resolve' => function ($root, $args) {
+                            return UserResolver::discordUser($args['code'], $args['auth_id']);
+                        }
+                    ],
                     'activateUser' => [
                         'type' => TypesRegistry::activateUserResponse(),
                         'description' => 'Activates the user',

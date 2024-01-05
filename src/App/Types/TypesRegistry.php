@@ -8,6 +8,7 @@ use App\Types\QueryType;
 use App\Types\MutationType;
 use App\Types\UserType;
 use App\Types\UserMutationTypes\ResponseTypes\LoginUserResponseType;
+use App\Types\UserMutationTypes\ResponseTypes\DiscordUserResponseType;
 use App\Types\UserMutationTypes\ResponseTypes\LogoutUserResponseType;
 use App\Types\UserMutationTypes\ResponseTypes\AuthUserResponseType;
 use App\Types\UserMutationTypes\ResponseTypes\RegisterUserResponseType;
@@ -77,6 +78,10 @@ class TypesRegistry {
 
     public static function loginUserResponse() {
         return new LoginUserResponseType;
+    }
+
+    public static function discordUserResponse() {
+        return new DiscordUserResponseType;
     }
     
     public static function logoutUserResponse() {
