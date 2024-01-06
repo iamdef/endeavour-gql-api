@@ -17,8 +17,8 @@ class QueryType extends ObjectType
         $config = [
             'fields' => function() {
                 return [
-                    'user' => [
-                        'type' => TypesRegistry::user(),
+                    'getUser' => [
+                        'type' => TypesRegistry::userResponse(),
                         'description' => 'Возвращает пользователя по id',
                         'args' => [
                             'id' => TypesRegistry::id()

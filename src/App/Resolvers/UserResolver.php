@@ -9,6 +9,7 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/../../../vendor/autoload.php';
 use Dotenv\Dotenv;
 use App\DB\Database;
+use App\utils\Access;
 use App\utils\Token;
 use App\utils\Email;
 use App\utils\Curl;
@@ -20,7 +21,15 @@ class UserResolver
 {
     public static function getUserById($userId)
     {
-        return Database::selectOne("SELECT * from user WHERE id = (?)", [$userId]);
+        // checking the access to resolve the query
+        $scope = ['admin', 'player'];
+        if(!Access::check($scope)) return ["success"=> false, "message"=> 'Unauthorized'];
+
+        $query = "SELECT * FROM user WHERE id = ?";
+        $user_data = Database::selectOne($query, [$userId]);
+        if (!$user_data) return ["user" => null, "success"=> false, "message"=> 'No such user'];
+
+        return ["success"=> true, "message"=> 'Successful query', 'user' => $user_data];
     }
 
     public static function getAllUsers()
@@ -82,26 +91,29 @@ class UserResolver
     }
 
     public static function authUser()
-    {
+    {   
+        $query = "SELECT * FROM user WHERE id = ?";
+        $access_token = Token::getBearerToken();
+        $is_access_valid = Token::isTokenValid($access_token);
+        
+        if ($is_access_valid) {
+            $user_id = Token::getPayload($access_token)->user_id;
+            $user_data = Database::selectOne($query, [$user_id]);
+            if (!$user_data) return ["user" => null, "success"=> false, "message"=> 'No such user'];
+            return ["success"=> true, "user" => $user_data, "token" => $access_token, "message"=> 'Successful authorization'];
+        }
+
         if (!isset($_COOKIE['NDVR-RT'])) return ["success"=> false, "message"=> 'Refresh token has not been received'];
+
         $refresh_token = $_COOKIE['NDVR-RT'];
         $is_refresh_valid = Token::isTokenValid($refresh_token);
         if(!$is_refresh_valid) return ["success"=> false, "message"=> 'Invalid refresh token'];
         $user_id = Token::getPayload($refresh_token)->user_id;
-        if(!$user_id) return ["success"=> false, "message"=> 'Invalid refresh token'];
-
-        $query = "SELECT * FROM user WHERE id = ?";
-
         $user_data = Database::selectOne($query, [$user_id]);
         if (!$user_data) return ["user" => null, "success"=> false, "message"=> 'No such user'];
 
-        $access_token = Token::getBearerToken();
-
-        $is_access_valid = Token::isTokenValid($access_token);
-        if($is_access_valid) return ["success"=> true, "user" => $user_data, "message"=> 'Successful authorization'];
-
         $new_access_token = Token::generateJWToken($user_data->id);
-        return ["success"=> true, "user" => $user_data, "token" => $new_access_token, "message"=> 'Successful authorization via refresh token'];
+        return ["success"=> true, "user" => $user_data, "token" => $new_access_token, "message"=> 'Successful authorization'];
     }
 
     public static function registerUser($data)
@@ -255,7 +267,7 @@ class UserResolver
     public static function discordUser($code, $auth_id)
     {
         $discord_user_data = Curl::getUserFromDiscord($code);
-        if (!$discord_user_data) return ["success"=> false, "message"=> 'Invalid authorization code'];
+        if (!$discord_user_data) return ["success"=> false, "message"=> 'Invalid code'];
         Database::insert('auth_ids', [
             'auth_id' => $auth_id
         ]);

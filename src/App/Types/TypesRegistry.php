@@ -7,6 +7,9 @@ use GraphQL\Type\Definition\InputObjectType;
 use App\Types\QueryType;
 use App\Types\MutationType;
 use App\Types\UserType;
+
+use App\Types\UserQueryTypes\ResponseTypes\UserResponseType;
+
 use App\Types\UserMutationTypes\ResponseTypes\LoginUserResponseType;
 use App\Types\UserMutationTypes\ResponseTypes\DiscordUserResponseType;
 use App\Types\UserMutationTypes\ResponseTypes\LogoutUserResponseType;
@@ -110,5 +113,9 @@ class TypesRegistry {
 
     public static function changePasswordResponse() {
         return new ChangePasswordResponseType;
+    }
+
+    public static function userResponse() {
+        return new UserResponseType;
     }
 }
