@@ -27,8 +27,8 @@ class QueryType extends ObjectType
                             return UserResolver::getUserById($args['id']);
                         }
                     ],
-                    'allUsers' => [
-                        'type' => TypesRegistry::listOf(TypesRegistry::user()),
+                    'getAllUsers' => [
+                        'type' => TypesRegistry::allUsersResponse(),
                         'description' => 'Список пользователей',
                         'resolve' => function () {
                             return UserResolver::getAllUsers();

@@ -9,6 +9,7 @@ use App\Types\MutationType;
 use App\Types\UserType;
 
 use App\Types\UserQueryTypes\ResponseTypes\UserResponseType;
+use App\Types\UserQueryTypes\ResponseTypes\AllUsersResponseType;
 
 use App\Types\UserMutationTypes\ResponseTypes\LoginUserResponseType;
 use App\Types\UserMutationTypes\ResponseTypes\DiscordUserResponseType;
@@ -59,10 +60,6 @@ class TypesRegistry {
 
     public static function boolean() {
         return Type::boolean();
-    }
-
-    public static function noNull() {
-        return Type::nonNull();
     }
 
     public static function inputRegister() {
@@ -117,5 +114,9 @@ class TypesRegistry {
 
     public static function userResponse() {
         return new UserResponseType;
+    }
+
+    public static function allUsersResponse() {
+        return new AllUsersResponseType;
     }
 }

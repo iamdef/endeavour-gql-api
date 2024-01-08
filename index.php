@@ -10,6 +10,7 @@ use GraphQL\Type\Schema;
 
 use App\Types\TypesRegistry;
 use App\DB\Database;
+use App\utils\Logme;
 
 $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->load();
@@ -38,6 +39,10 @@ try {
     $output = $result->toArray();
 
 } catch(\Exception $e) {
+    Logme::warning('Error GQL API', [
+        'message' => $e->getMessage(),
+        'time' => date('Y-m-d H:i:s')
+    ]);
     $output = [
         'errors' => [
             [

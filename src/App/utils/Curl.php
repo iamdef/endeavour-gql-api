@@ -6,22 +6,22 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-require_once __DIR__ . '/../../../vendor/autoload.php';
+require_once 'Vendor/autoload.php';
 use Dotenv\Dotenv;
 
-$dotenv = Dotenv::createImmutable(__DIR__ . '/../../../');
+$dotenv = Dotenv::createImmutable('Vendor/' . '../');
 $dotenv->load();
 
 class Curl {
 
-    public static function apiRequest($url, $post = FALSE, $headers = array()) {
+    public static function apiRequest($url, $post = array(), $headers = array()) {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // SSL turn off in dev
     
     
-        if ($post) {
+        if (count($post) > 0) {
             curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post));
         }
     
@@ -32,7 +32,7 @@ class Curl {
         $response = curl_exec($ch);
     
         if ($response === FALSE) {
-            throw new Exception('cURL Error: ' . curl_error($ch));
+            throw new \Exception('cURL Error: ' . curl_error($ch));
         }
     
         curl_close($ch);
@@ -51,7 +51,7 @@ class Curl {
         $redirectUri = $_ENV['DISCORD_REDIRECT_URI'] ?? null;
     
         if (!$clientId || !$clientSecret || !$redirectUri) {
-            throw new Exception('Discord API credentials are not set.');
+            throw new \Exception('cURL Error: ' . curl_error($ch));
         }
     
         $token = self::apiRequest($_ENV['DISCORD_TOKEN_URL'], array(
@@ -72,7 +72,7 @@ class Curl {
         $response = curl_exec($ch);
     
         if ($response === FALSE) {
-            throw new Exception('cURL Error: ' . curl_error($ch));
+            throw new \Exception('cURL Error: ' . curl_error($ch));
         }
     
         curl_close($ch);
