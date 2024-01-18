@@ -35,6 +35,10 @@ class UserType extends ObjectType {
                         'type' => TypesRegistry::string(),
                         'description' => 'Аватар пользователя'
                     ],
+                    'about' => [
+                        'type' => TypesRegistry::string(),
+                        'description' => 'Описание пользователя'
+                    ],
                     'roles' => [
                         'type' => TypesRegistry::listOf(TypesRegistry::string()),
                         'description' => 'Роли пользователя',

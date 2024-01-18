@@ -11,6 +11,7 @@ use GraphQL\Type\Definition\ObjectType;
 use App\DB\Database;
 use App\Types\TypesRegistry;
 use App\Resolvers\UserResolver;
+use App\Resolvers\PostResolver;
 
 
 
@@ -107,6 +108,16 @@ class MutationType extends ObjectType
                         ],
                         'resolve' => function ($root, $args) {
                             return UserResolver::changePassword($args['data']);
+                        }
+                    ],
+                    'savePost' => [
+                        'type' => TypesRegistry::savePostResponse(),
+                        'description' => 'Saving post',
+                        'args' => [
+                            'data' => TypesRegistry::jsonScalar()
+                        ],
+                        'resolve' => function ($root, $args) {
+                            return PostResolver::savePost($args['data']);
                         }
                     ],
                 ];

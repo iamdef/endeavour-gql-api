@@ -8,6 +8,8 @@ use App\Types\QueryType;
 use App\Types\MutationType;
 use App\Types\UserType;
 
+use App\Types\UserQueryTypes\QueryTypes\UserQueryType;
+
 use App\Types\UserQueryTypes\ResponseTypes\UserResponseType;
 use App\Types\UserQueryTypes\ResponseTypes\AllUsersResponseType;
 
@@ -24,14 +26,23 @@ use App\Types\UserMutationTypes\ResponseTypes\ChangePasswordResponseType;
 use App\Types\UserMutationTypes\InputTypes\InputRegisterType;
 use App\Types\UserMutationTypes\InputTypes\InputChangePasswordType;
 
+use App\Types\PostMutationTypes\InputTypes\JSONScalarType;
+use App\Types\PostMutationTypes\ResponseTypes\SavePostResponseType;
+use App\Types\PostQueryTypes\ResponseTypes\AllPostsResponseType;
+
 class TypesRegistry {
 
     private static $query;
     private static $mutation;
+    private static $jsonScalar;
     private static $user;
 
     public function path() {
         return __CLASS__ . ':' . __FILE__;
+    }
+
+    public static function jsonScalar() {
+        return self::$jsonScalar ?: (self::$jsonScalar = new JSONScalarType());
     }
 
     public static function query() {
@@ -68,6 +79,10 @@ class TypesRegistry {
 
     public static function inputChangePassword() {
         return new InputChangePasswordType;
+    }
+
+    public static function userQuery() {
+        return new UserQueryType;
     }
 
     // custom response types
@@ -118,5 +133,13 @@ class TypesRegistry {
 
     public static function allUsersResponse() {
         return new AllUsersResponseType;
+    }
+
+    public static function savePostResponse() {
+        return new SavePostResponseType;
+    }
+
+    public static function getAllPostsResponse() {
+        return new AllPostsResponseType;
     }
 }

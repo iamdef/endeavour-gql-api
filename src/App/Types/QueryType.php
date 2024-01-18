@@ -7,6 +7,7 @@ use GraphQL\Type\Definition\ObjectType;
 use App\DB\Database;
 use App\Types\TypesRegistry;
 use App\Resolvers\UserResolver;
+use App\Resolvers\PostResolver;
 
 
 
@@ -21,10 +22,10 @@ class QueryType extends ObjectType
                         'type' => TypesRegistry::userResponse(),
                         'description' => 'Возвращает пользователя по id',
                         'args' => [
-                            'id' => TypesRegistry::id()
+                            'data' => TypesRegistry::userQuery()
                         ],
                         'resolve' => function ($root, $args) {
-                            return UserResolver::getUserById($args['id']);
+                            return UserResolver::getUser($args['data']);
                         }
                     ],
                     'getAllUsers' => [
@@ -33,7 +34,18 @@ class QueryType extends ObjectType
                         'resolve' => function () {
                             return UserResolver::getAllUsers();
                         }
-                    ]
+                    ],
+                    'getAllPosts' => [
+                        'type' => TypesRegistry::getAllPostsResponse(),
+                        'description' => 'Fetching the posts',
+                        'args' => [
+                            'initial' => TypesRegistry::int(),
+                            'offset' => TypesRegistry::int()
+                        ],
+                        'resolve' => function ($root, $args) {
+                            return PostResolver::getAllPosts($args['initial'], $args['offset']);
+                        }
+                    ],
                 ];
             }
         ];

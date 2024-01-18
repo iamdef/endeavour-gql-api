@@ -21,15 +21,17 @@ $dotenv->load();
 
 class UserResolver
 {
-    public static function getUserById($userId)
+    public static function getUser($data)
     {
-        // checking the access to resolve the query
-        $scope = ['admin', 'player'];
-        if(!Access::check($scope)) return ["success"=> false, "message"=> 'Unauthorized'];
         try {
-            $query = "SELECT * FROM user WHERE id = ?";
-            $user_data = Database::selectOne($query, [$userId]);
-
+            if (isset($data['id'])) {
+                $query = "SELECT * FROM user WHERE id = ?";
+                $user_data = Database::selectOne($query, [$data['id']]);
+            } else {
+                $query = "SELECT * FROM user WHERE username = ?";
+                $user_data = Database::selectOne($query, [$data['username']]);
+            }
+            
             if (!$user_data) return ["user" => null, "success"=> false, "message"=> 'No such user'];
             return ["success"=> true, "message"=> 'Successful query', 'user' => $user_data];
 

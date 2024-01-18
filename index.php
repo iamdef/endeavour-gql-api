@@ -9,6 +9,7 @@ use GraphQL\GraphQL;
 use GraphQL\Type\Schema;
 
 use App\Types\TypesRegistry;
+use App\Types\PostMutationTypes\InputTypes\JSONScalarType;
 use App\DB\Database;
 use App\utils\Logme;
 
@@ -32,17 +33,18 @@ try {
 
     $schema = new Schema([
         'query' => TypesRegistry::query(),
-        'mutation' => TypesRegistry::mutation()
+        'mutation' => TypesRegistry::mutation(),
+        'types' => [TypesRegistry::jsonScalar()],
     ]);
 
     $result = GraphQL::executeQuery($schema, $query, null, null, $variables);
     $output = $result->toArray();
 
 } catch(\Exception $e) {
-    Logme::warning('Error GQL API', [
-        'message' => $e->getMessage(),
-        'time' => date('Y-m-d H:i:s')
-    ]);
+    // Logme::warning('Error GQL API', [
+    //     'message' => $e->getMessage(),
+    //     'time' => date('Y-m-d H:i:s')
+    // ]);
     $output = [
         'errors' => [
             [
