@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Types\PostQueryTypes\ResponseTypes;
+namespace App\Types\PostMutationTypes\ResponseTypes;
 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -10,27 +10,27 @@ use GraphQL\Type\Definition\ObjectType;
 
 use App\Types\TypesRegistry;
 
-class AllPostsResponseType extends ObjectType {
+class IncPostViewResponseType extends ObjectType {
     public function __construct() {
         $config = [
-            'description' => 'The type of object returned during all posts query',
+            'description' => 'The type of object returned during saving post',
             'fields' => function() {
                 return [
                     'success' => [
                         'type' => TypesRegistry::boolean(),
-                        'description' => 'Post data query status'
+                        'description' => 'Saving status'
                     ],
                     'message' => [
                         'type' => TypesRegistry::string(),
-                        'description' => 'Post data query status message'
+                        'description' => 'Saving status message'
                     ],
-                    'total' => [
+                    'id' => [
+                        'type' => TypesRegistry::id(),
+                        'description' => 'Post id'
+                    ],
+                    'views' => [
                         'type' => TypesRegistry::int(),
-                        'description' => 'Total posts'
-                    ],
-                    'posts' => [
-                        'type' => TypesRegistry::listOf(TypesRegistry::post()),
-                        'description' => 'Pposts'
+                        'description' => 'Count of views'
                     ],
                 ];
             }

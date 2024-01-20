@@ -8,7 +8,7 @@ error_reporting(E_ALL);
 
 use GraphQL\Type\Definition\ObjectType;
 
-use App\DB\Database;
+use GraphQL\Type\Definition\Type;
 use App\Types\TypesRegistry;
 use App\Resolvers\UserResolver;
 
@@ -16,36 +16,40 @@ use App\Resolvers\UserResolver;
 class UserType extends ObjectType {
     public function __construct() {
         $config = [
-            'description' => 'Пользователь',
+            'description' => 'User',
             'fields' => function() {
                 return [
                     'id' => [
                         'type' => TypesRegistry::id(),
-                        'description' => 'Идентификатор пользователя'
+                        'description' => 'User id'
                     ],
                     'username' => [
                         'type' => TypesRegistry::string(),
-                        'description' => 'Имя пользователя'
+                        'description' => 'Username'
                     ],
                     'email' => [
                         'type' => TypesRegistry::string(),
-                        'description' => 'E-mail пользователя'
+                        'description' => 'User e-mail'
                     ],
                     'avatar' => [
                         'type' => TypesRegistry::string(),
-                        'description' => 'Аватар пользователя'
+                        'description' => 'User avatar'
                     ],
                     'about' => [
                         'type' => TypesRegistry::string(),
-                        'description' => 'Описание пользователя'
+                        'description' => 'User description'
                     ],
                     'roles' => [
                         'type' => TypesRegistry::listOf(TypesRegistry::string()),
-                        'description' => 'Роли пользователя',
+                        'description' => 'User roles',
                         'resolve' => function ($root) {
                             return UserResolver::getUserRoles($root->id);
                         }
                     ],
+                    'created_date' => [
+                        'type' => TypesRegistry::string(),
+                        'description' => 'Account created date'
+                    ]
                 ];
             }
         ];

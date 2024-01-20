@@ -37,13 +37,24 @@ class QueryType extends ObjectType
                     ],
                     'getAllPosts' => [
                         'type' => TypesRegistry::getAllPostsResponse(),
-                        'description' => 'Fetching the posts',
+                        'description' => 'Fetching posts',
                         'args' => [
-                            'initial' => TypesRegistry::int(),
-                            'offset' => TypesRegistry::int()
+                            'cursor' => TypesRegistry::int(),
+                            'limit' => TypesRegistry::int(),
+                            'sortDirection' => TypesRegistry::string(),
                         ],
                         'resolve' => function ($root, $args) {
-                            return PostResolver::getAllPosts($args['initial'], $args['offset']);
+                            return PostResolver::getAllPosts($args['cursor'], $args['limit'], $args['sortDirection']);
+                        }
+                    ],
+                    'getPost' => [
+                        'type' => TypesRegistry::getPostResponse(),
+                        'description' => 'Fetching the post',
+                        'args' => [
+                            'id' => TypesRegistry::int(),
+                        ],
+                        'resolve' => function ($root, $args) {
+                            return PostResolver::getPost($args['id']);
                         }
                     ],
                 ];

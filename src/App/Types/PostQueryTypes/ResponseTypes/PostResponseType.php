@@ -10,10 +10,10 @@ use GraphQL\Type\Definition\ObjectType;
 
 use App\Types\TypesRegistry;
 
-class AllPostsResponseType extends ObjectType {
+class PostResponseType extends ObjectType {
     public function __construct() {
         $config = [
-            'description' => 'The type of object returned during all posts query',
+            'description' => 'The type of object returned during one post query',
             'fields' => function() {
                 return [
                     'success' => [
@@ -24,14 +24,10 @@ class AllPostsResponseType extends ObjectType {
                         'type' => TypesRegistry::string(),
                         'description' => 'Post data query status message'
                     ],
-                    'total' => [
-                        'type' => TypesRegistry::int(),
-                        'description' => 'Total posts'
-                    ],
-                    'posts' => [
-                        'type' => TypesRegistry::listOf(TypesRegistry::post()),
-                        'description' => 'Pposts'
-                    ],
+                    'post' => [
+                        'type' => TypesRegistry::post(),
+                        'description' => 'Post data'
+                    ]
                 ];
             }
         ];

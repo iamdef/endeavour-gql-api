@@ -43,7 +43,16 @@ class Database {
     public static function select($query, $params = []) {
         try {
             $statement = self::prepare($query);
-            $statement->execute($params);
+
+            if (!isset($params['limit'])) {
+                $statement->execute($params);
+            } else {
+                foreach ($params as $key => $value) {
+                    $dataType = is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR;
+                    $statement->bindValue($key, $value, $dataType);
+                }
+                $statement->execute();
+            }
             return $statement->fetchAll();
         } catch (PDOException $e) {
             Logme::error("Error executing query 'select'", [

@@ -7,6 +7,7 @@ use GraphQL\Type\Definition\InputObjectType;
 use App\Types\QueryType;
 use App\Types\MutationType;
 use App\Types\UserType;
+use App\Types\PostType;
 
 use App\Types\UserQueryTypes\QueryTypes\UserQueryType;
 
@@ -28,7 +29,9 @@ use App\Types\UserMutationTypes\InputTypes\InputChangePasswordType;
 
 use App\Types\PostMutationTypes\InputTypes\JSONScalarType;
 use App\Types\PostMutationTypes\ResponseTypes\SavePostResponseType;
+use App\Types\PostMutationTypes\ResponseTypes\IncPostViewResponseType;
 use App\Types\PostQueryTypes\ResponseTypes\AllPostsResponseType;
+use App\Types\PostQueryTypes\ResponseTypes\PostResponseType;
 
 class TypesRegistry {
 
@@ -36,6 +39,7 @@ class TypesRegistry {
     private static $mutation;
     private static $jsonScalar;
     private static $user;
+    private static $post;
 
     public function path() {
         return __CLASS__ . ':' . __FILE__;
@@ -89,6 +93,10 @@ class TypesRegistry {
 
     public static function user() {
         return self::$user ?: (self::$user = new UserType());
+    }   
+    
+    public static function post() {
+        return self::$post ?: (self::$post = new PostType());
     }    
 
     public static function loginUserResponse() {
@@ -139,7 +147,15 @@ class TypesRegistry {
         return new SavePostResponseType;
     }
 
+    public static function incPostViewResponse() {
+        return new IncPostViewResponseType;
+    }
+
     public static function getAllPostsResponse() {
         return new AllPostsResponseType;
+    }
+
+    public static function getPostResponse() {
+        return new PostResponseType;
     }
 }

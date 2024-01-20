@@ -123,7 +123,8 @@ class UserResolver
                 ['user_id' => $user_data->id],
                 ['user_id' => $user_data->id],
             );    
-    
+            
+            setcookie('NDVR-GT', '', time() - 3600 * 24 * 30, "/", "", false, true);
             setcookie('NDVR-RT', $RT, time() + 3600 * 24 * 30, "/", "", false, true);
             return ["success"=> $result, "user" => $user_data, "token" => $AT, "message"=> 'Successful account login'];
 
@@ -149,6 +150,13 @@ class UserResolver
         $access_token = Token::getBearerToken();
         $is_access_valid = Token::isTokenValid($access_token);
 
+        if (!isset($_COOKIE['NDVR-VT'])) {
+            $bytes = random_bytes(3);
+            $visitor_id = bin2hex($bytes);
+            $VT = Token::generateJWToken($visitor_id, 'visitor');
+            setcookie('NDVR-VT', $VT, time() + 3600 * 24 * 30, "/", "", false, true);
+        }
+
         try {
             if ($is_access_valid) {
                 $user_id = Token::getPayload($access_token)->user_id;
@@ -158,6 +166,7 @@ class UserResolver
             }
     
             if (!isset($_COOKIE['NDVR-RT'])) return ["success"=> false, "message"=> 'Refresh token has not been received'];
+
     
             $refresh_token = $_COOKIE['NDVR-RT'];
             $is_refresh_valid = Token::isTokenValid($refresh_token);

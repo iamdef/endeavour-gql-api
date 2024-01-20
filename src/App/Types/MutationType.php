@@ -120,6 +120,16 @@ class MutationType extends ObjectType
                             return PostResolver::savePost($args['data']);
                         }
                     ],
+                    'incPostView' => [
+                        'type' => TypesRegistry::incPostViewResponse(),
+                        'description' => 'Incrementing post views',
+                        'args' => [
+                            'post_id' => TypesRegistry::id()
+                        ],
+                        'resolve' => function ($root, $args) {
+                            return PostResolver::incPostView($args['post_id']);
+                        }
+                    ],
                 ];
             }
         ];
