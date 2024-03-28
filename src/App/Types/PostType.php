@@ -36,6 +36,10 @@ class PostType extends ObjectType {
                         'type' => TypesRegistry::int(),
                         'description' => 'Count of views'
                     ],
+                    'status' => [
+                        'type' => TypesRegistry::string(),
+                        'description' => 'Draft or publicated'
+                    ],
                 ];
             }
         ];

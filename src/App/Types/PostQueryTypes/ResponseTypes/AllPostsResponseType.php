@@ -30,7 +30,7 @@ class AllPostsResponseType extends ObjectType {
                     ],
                     'posts' => [
                         'type' => TypesRegistry::listOf(TypesRegistry::post()),
-                        'description' => 'Pposts'
+                        'description' => 'Posts'
                     ],
                 ];
             }

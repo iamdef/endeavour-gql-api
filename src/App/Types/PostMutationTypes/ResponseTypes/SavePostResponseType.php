@@ -28,8 +28,12 @@ class SavePostResponseType extends ObjectType {
                         'type' => TypesRegistry::id(),
                         'description' => 'Post id'
                     ],
+                    // 'post' => [
+                    //     'type' => TypesRegistry::jsonScalar(),
+                    //     'description' => 'Post id'
+                    // ]
                     'post' => [
-                        'type' => TypesRegistry::jsonScalar(),
+                        'type' => TypesRegistry::post(),
                         'description' => 'Post id'
                     ]
                 ];

@@ -23,49 +23,138 @@ class PostResolver
     {           
         $author = $data['author'];
         $theme = $data['theme'];
+        $updateId = $data['updateId'];
 
         try {
+            if ($updateId) {
+                $upd_res = Database::update(
+                    'posts',
+                    ['author' => $author, 'theme' => $theme, 'content' => json_encode($data), 'status' => 'черновик'],
+                    ['id' => (int)$updateId],
+                    ['id' => (int)$updateId],
+                );
+                if (!$upd_res) return ['success' => false, 'message' => 'Error when saving the updated post', 'id' => (int)$updateId, 'post' => $data];
+                $post_res = self::getPost((int)$updateId);
+                if (!$post_res['success']) ['success' => false, 'message' => 'Error when getting the updated post', 'id' => (int)$updateId, 'post' => $data];
+                return ['success' => true, 'message' => 'The post has been successfully updated', 'id' => (int)$updateId, 'post' => $post_res['post']];
+            }
             $post_id = Database::insert('posts', [
                 'author' => $author,
                 'theme' => $theme,
+                'status' => 'черновик',
                 'content' => json_encode($data)
             ]);
-            return ['success' => true, 'message' => 'The post has been successfully saved ', 'id' => $post_id, 'post' => $data];
+            $post_res = self::getPost($post_id);
+            return ['success' => true, 'message' => 'The post has been successfully saved', 'id' => $post_id, 'post' => $post_res['post']];
         } catch (\Exception $e) {
             Logme::warning('Error saving the post', [
                 'message' => $e->getMessage(),
                 'author' => $author,
                 'time' => date('Y-m-d H:i:s')
             ]);
-            return ['success' => false, 'message' => 'Error post saving'];
+            return ['success' => false, 'message' => 'Error post saving. See logs for more details.'];
         }
     }
 
-    public static function getAllPosts($cursor, $limit, $sortDirection)
+    public static function getAllPosts($cursor, $limit, $sortDirection, $theme, $status)
     {   
         try {
 
             $direction = $sortDirection === 'old' ? 'ORDER BY posts.id' : 'ORDER BY posts.id DESC';
-            $totalCount = Database::selectOne('SELECT COUNT(*) as total FROM posts');
 
-            $query = 'SELECT posts.id, posts.author, posts.theme, posts.content, posts.views, user.avatar
+            // Строим условие WHERE для запроса
+            $whereClause = ' WHERE 1=1'; // Начальное условие
+            $params = ['limit' => (int)$limit, 'offset' => (int)$cursor]; // Параметры для запроса
+            $whereTotal = ' WHERE 1=1'; // Для подсчета общего количества записей
+            $paramsTotal = []; // Параметры для подсчета общего количества записей
+
+            // Добавляем условие по теме, если оно задано
+            if ($theme !== 'Все') {
+                $whereClause .= ' AND posts.theme = :theme';
+                $params['theme'] = strtolower($theme);
+                $whereTotal .= ' AND theme = :theme';
+                $paramsTotal['theme'] = strtolower($theme);
+            }
+
+            // Добавляем условие по статусу, если он задан
+            if ($status !== 'all') {
+                $whereClause .= ' AND posts.status = :status';
+                $params['status'] = $status;
+                $whereTotal .= ' AND status = :status';
+                $paramsTotal['status'] = $status;
+            }
+
+            // Получаем общее количество записей
+            $totalCount = Database::selectOne('SELECT COUNT(*) as total FROM posts' . $whereTotal, $paramsTotal);
+
+            // Строим запрос для получения данных
+            $query = 'SELECT posts.id, posts.author, posts.theme, posts.content, posts.status, posts.views, user.avatar
                     FROM posts
-                    LEFT JOIN user ON posts.author = user.username '.$direction.' LIMIT :limit OFFSET :offset';
-            $posts_data = Database::select($query, ['limit' => (int)$limit, 'offset' => (int)$cursor]);
+                    LEFT JOIN user ON posts.author = user.username'
+                    . $whereClause . ' ' . $direction . ' LIMIT :limit OFFSET :offset';
 
+            // Получаем данные постов
+            $postsData = Database::select($query, $params);
 
-            $posts = array_map(function($posts_data) {
+            // Маппим данные постов
+            $posts = array_map(function($postData) {
+                // Увеличиваем счетчик просмотров
+                $inc = self::incPostView($postData->id);
                 return [
-                    'id' => $posts_data->id,
+                    'id' => $postData->id,
                     'author' => [
-                        'username' => $posts_data->author,
-                        'avatar' => $posts_data->avatar
+                        'username' => $postData->author,
+                        'avatar' => $postData->avatar
                     ],
-                    'theme' => $posts_data->theme,
-                    'content' => json_decode($posts_data->content, true),
-                    'views' => $posts_data->views
-                ];   
-            }, $posts_data);
+                    'theme' => $postData->theme,
+                    'content' => json_decode($postData->content, true),
+                    'status' => $postData->status,
+                    'views' => $inc['success'] ? $inc['views'] : $postData->views
+                ];
+            }, $postsData);
+
+            // if ($status !== 'all') {
+            //     $where = $theme !== 'Все' ? ' WHERE posts.theme = :theme AND posts.status = :status ' : ' WHERE posts.status = :status ';
+            //     $params = $theme !== 'Все'
+            //     ? ['limit' => (int)$limit, 'offset' => (int)$cursor, 'theme' => strtolower($theme), 'status' => $status]
+            //     : ['limit' => (int)$limit, 'offset' => (int)$cursor, 'status' => $status];
+            //     $whereTotal = $theme !== 'Все' ? ' WHERE theme = :theme AND status = :status' : ' WHERE status = :status';
+            //     $paramsTotal = $theme !== 'Все'
+            //     ? ['theme' => strtolower($theme), 'status' => $status]
+            //     : ['status' => $status];
+            // } else {
+            //     $where = $theme !== 'Все' ? ' WHERE posts.theme = :theme ' : ' ';
+            //     $params = $theme !== 'Все'
+            //     ? ['limit' => (int)$limit, 'offset' => (int)$cursor, 'theme' => strtolower($theme)]
+            //     : ['limit' => (int)$limit, 'offset' => (int)$cursor];
+            //     $whereTotal = $theme !== 'Все' ? ' WHERE theme = :theme' : '';
+            //     $paramsTotal = $theme !== 'Все'
+            //     ? ['theme' => strtolower($theme)]
+            //     : [];
+            // };
+
+            // $totalCount = Database::selectOne('SELECT COUNT(*) as total FROM posts'.$whereTotal, $paramsTotal);
+
+            // $query = 'SELECT posts.id, posts.author, posts.theme, posts.content, posts.status, posts.views, user.avatar
+            //         FROM posts
+            //         LEFT JOIN user ON posts.author = user.username'.$where.$direction.' LIMIT :limit OFFSET :offset';
+            // $posts_data = Database::select($query, $params);
+
+
+            // $posts = array_map(function($posts_data) {
+            //     $inc = self::incPostView($posts_data->id);
+            //     return [
+            //         'id' => $posts_data->id,
+            //         'author' => [
+            //             'username' => $posts_data->author,
+            //             'avatar' => $posts_data->avatar
+            //         ],
+            //         'theme' => $posts_data->theme,
+            //         'content' => json_decode($posts_data->content, true),
+            //         'status' => $posts_data->status,
+            //         'views' => $inc['success'] ? $inc['views'] : $posts_data->views
+            //     ];   
+            // }, $posts_data);
 
             return ['success' => true, 'message' => 'Successfull fetched posts', 'posts' => $posts, 'total' => $totalCount->total];
         } catch (\Exception $e) {
@@ -80,7 +169,7 @@ class PostResolver
     public static function getPost($id)
     {   
         try {
-            $query = 'SELECT posts.id, posts.author, posts.theme, posts.content, posts.views, user.avatar
+            $query = 'SELECT posts.id, posts.author, posts.theme, posts.content, posts.views, posts.status, user.avatar
                 FROM posts
                 LEFT JOIN user ON posts.author = user.username WHERE posts.id = :id';
             $post_data = Database::selectOne($query, ['id' => $id]);
@@ -94,8 +183,10 @@ class PostResolver
                 ],
                 'theme' => $post_data->theme,
                 'content' => json_decode($post_data->content, true),
-                'views' => $post_data->views
+                'status' => $post_data->status
             ];
+            $inc = self::incPostView($post['id']);
+            $post['views'] = $inc['success'] ? $inc['views'] : $post_data->views;
             return ['success' => true, 'message' => 'Successfull fetched post', 'post' => $post];
         } catch (\Exception $e) {
             Logme::warning('Error fetching post', [

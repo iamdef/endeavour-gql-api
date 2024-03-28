@@ -42,9 +42,11 @@ class QueryType extends ObjectType
                             'cursor' => TypesRegistry::int(),
                             'limit' => TypesRegistry::int(),
                             'sortDirection' => TypesRegistry::string(),
+                            'theme' => TypesRegistry::string(),
+                            'status' => TypesRegistry::string(),
                         ],
                         'resolve' => function ($root, $args) {
-                            return PostResolver::getAllPosts($args['cursor'], $args['limit'], $args['sortDirection']);
+                            return PostResolver::getAllPosts($args['cursor'], $args['limit'], $args['sortDirection'], $args['theme'], $args['status']);
                         }
                     ],
                     'getPost' => [
