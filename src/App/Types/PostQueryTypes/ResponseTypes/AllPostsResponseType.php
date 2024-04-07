@@ -32,6 +32,10 @@ class AllPostsResponseType extends ObjectType {
                         'type' => TypesRegistry::listOf(TypesRegistry::post()),
                         'description' => 'Posts'
                     ],
+                    'prepared' => [
+                        'type' => TypesRegistry::jsonScalar(),
+                        'description' => 'Post data'
+                    ]
                 ];
             }
         ];

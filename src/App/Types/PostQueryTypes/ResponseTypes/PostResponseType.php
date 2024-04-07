@@ -27,6 +27,10 @@ class PostResponseType extends ObjectType {
                     'post' => [
                         'type' => TypesRegistry::post(),
                         'description' => 'Post data'
+                    ],
+                    'prepared' => [
+                        'type' => TypesRegistry::jsonScalar(),
+                        'description' => 'Post data'
                     ]
                 ];
             }

@@ -9,6 +9,7 @@ error_reporting(E_ALL);
 require_once 'Vendor/autoload.php';
 use Dotenv\Dotenv;
 use App\DB\Database;
+use App\utils\PostPreparator;
 use App\utils\Access;
 use App\utils\Logme;
 use App\utils\Token;
@@ -113,50 +114,9 @@ class PostResolver
                 ];
             }, $postsData);
 
-            // if ($status !== 'all') {
-            //     $where = $theme !== 'Все' ? ' WHERE posts.theme = :theme AND posts.status = :status ' : ' WHERE posts.status = :status ';
-            //     $params = $theme !== 'Все'
-            //     ? ['limit' => (int)$limit, 'offset' => (int)$cursor, 'theme' => strtolower($theme), 'status' => $status]
-            //     : ['limit' => (int)$limit, 'offset' => (int)$cursor, 'status' => $status];
-            //     $whereTotal = $theme !== 'Все' ? ' WHERE theme = :theme AND status = :status' : ' WHERE status = :status';
-            //     $paramsTotal = $theme !== 'Все'
-            //     ? ['theme' => strtolower($theme), 'status' => $status]
-            //     : ['status' => $status];
-            // } else {
-            //     $where = $theme !== 'Все' ? ' WHERE posts.theme = :theme ' : ' ';
-            //     $params = $theme !== 'Все'
-            //     ? ['limit' => (int)$limit, 'offset' => (int)$cursor, 'theme' => strtolower($theme)]
-            //     : ['limit' => (int)$limit, 'offset' => (int)$cursor];
-            //     $whereTotal = $theme !== 'Все' ? ' WHERE theme = :theme' : '';
-            //     $paramsTotal = $theme !== 'Все'
-            //     ? ['theme' => strtolower($theme)]
-            //     : [];
-            // };
+            $preparedPosts = PostPreparator::prepare($posts);
 
-            // $totalCount = Database::selectOne('SELECT COUNT(*) as total FROM posts'.$whereTotal, $paramsTotal);
-
-            // $query = 'SELECT posts.id, posts.author, posts.theme, posts.content, posts.status, posts.views, user.avatar
-            //         FROM posts
-            //         LEFT JOIN user ON posts.author = user.username'.$where.$direction.' LIMIT :limit OFFSET :offset';
-            // $posts_data = Database::select($query, $params);
-
-
-            // $posts = array_map(function($posts_data) {
-            //     $inc = self::incPostView($posts_data->id);
-            //     return [
-            //         'id' => $posts_data->id,
-            //         'author' => [
-            //             'username' => $posts_data->author,
-            //             'avatar' => $posts_data->avatar
-            //         ],
-            //         'theme' => $posts_data->theme,
-            //         'content' => json_decode($posts_data->content, true),
-            //         'status' => $posts_data->status,
-            //         'views' => $inc['success'] ? $inc['views'] : $posts_data->views
-            //     ];   
-            // }, $posts_data);
-
-            return ['success' => true, 'message' => 'Successfull fetched posts', 'posts' => $posts, 'total' => $totalCount->total];
+            return ['success' => true, 'message' => 'Successfull fetched posts', 'posts' => $posts, 'total' => $totalCount->total, 'prepared' => $preparedPosts];
         } catch (\Exception $e) {
             Logme::warning('Error fetching posts', [
                 'message' => $e->getMessage(),
@@ -187,7 +147,10 @@ class PostResolver
             ];
             $inc = self::incPostView($post['id']);
             $post['views'] = $inc['success'] ? $inc['views'] : $post_data->views;
-            return ['success' => true, 'message' => 'Successfull fetched post', 'post' => $post];
+
+            $preparedPost = PostPreparator::prepare($post, true);
+
+            return ['success' => true, 'message' => 'Successfull fetched post', 'post' => $post, 'prepared' => $preparedPost];
         } catch (\Exception $e) {
             Logme::warning('Error fetching post', [
                 'message' => $e->getMessage(),
