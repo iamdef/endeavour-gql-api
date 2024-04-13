@@ -8,6 +8,7 @@ use App\Types\QueryType;
 use App\Types\MutationType;
 use App\Types\UserType;
 use App\Types\PostType;
+use App\Types\DateTimeType;
 
 use App\Types\UserQueryTypes\QueryTypes\UserQueryType;
 
@@ -97,6 +98,10 @@ class TypesRegistry {
     
     public static function post() {
         return self::$post ?: (self::$post = new PostType());
+    }
+    
+    public static function dateTime() {
+        return self::$post ?: (self::$post = new DateTimeType());
     }    
 
     public static function loginUserResponse() {

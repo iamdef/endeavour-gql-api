@@ -133,6 +133,7 @@ class PostPreparator {
             'author' => $author,
             'date' => $date,
             'time' => $time,
+            'timestamp' => $timestamp,
             'title' => $title,
             'theme' => $theme,
             'paragraph' => $paragraph,

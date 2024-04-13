@@ -116,7 +116,7 @@ class PostResolver
 
             $preparedPosts = PostPreparator::prepare($posts);
 
-            return ['success' => true, 'message' => 'Successfull fetched posts', 'posts' => $posts, 'total' => $totalCount->total, 'prepared' => $preparedPosts];
+            return ['success' => true, 'message' => 'Successfull fetched posts', 'posts' => $preparedPosts, 'total' => $totalCount->total];
         } catch (\Exception $e) {
             Logme::warning('Error fetching posts', [
                 'message' => $e->getMessage(),
@@ -147,10 +147,10 @@ class PostResolver
             ];
             $inc = self::incPostView($post['id']);
             $post['views'] = $inc['success'] ? $inc['views'] : $post_data->views;
-
+            
             $preparedPost = PostPreparator::prepare($post, true);
 
-            return ['success' => true, 'message' => 'Successfull fetched post', 'post' => $post, 'prepared' => $preparedPost];
+            return ['success' => true, 'message' => 'Successfull fetched post', 'post' => $preparedPost];
         } catch (\Exception $e) {
             Logme::warning('Error fetching post', [
                 'message' => $e->getMessage(),
