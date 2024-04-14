@@ -190,4 +190,61 @@ class PostResolver
 
     }
 
+    public static function changePostStatus($ids, $status)
+    {
+        $sanitizedIds = array_map('intval', $ids);
+        $upd_results = [];
+        try {
+            foreach ($sanitizedIds as $id) {
+                $upd_res = Database::update(
+                    'posts',
+                    ['status' => $status],
+                    ['id' => $id],
+                    ['id' => $id],
+                ); 
+                $upd_results[$id] = $upd_res;
+            }
+
+            if (in_array(false, $upd_results, true)) {
+                $errorIds = array_keys($upd_results, false, true);
+                return ['success' => false, 'message' => 'Error when changing status for posts with IDs: ' . implode(', ', $errorIds), 'ids' => $sanitizedIds, 'status' => $status];
+            }
+
+            return ['success' => true, 'message' => 'The post status has been successfully updated', 'ids' => $sanitizedIds, 'status' => $status];
+        } catch (\Exception $e) {
+            Logme::warning('Error changing post status', [
+                'message' => $e->getMessage(),
+                'id' => $sanitizedIds,
+                'time' => date('Y-m-d H:i:s')
+            ]);
+            return ['success' => false, 'message' => 'Error changing post status. See logs for more details.'];
+        }
+    }
+
+    public static function deletePost($ids)
+    {
+        $sanitizedIds = array_map('intval', $ids);
+        $upd_results = [];
+        try {
+            foreach ($sanitizedIds as $id) {
+                $upd_res = Database::delete('posts', ['id' => $id], ['id' => $id]);
+                $upd_results[$id] = $upd_res;
+            }
+
+            if (in_array(false, $upd_results, true)) {
+                $errorIds = array_keys($upd_results, false, true);
+                return ['success' => false, 'message' => 'Error when deleting posts with IDs: ' . implode(', ', $errorIds), 'ids' => $sanitizedIds];
+            }
+
+            return ['success' => true, 'message' => 'The post has been successfully deleted', 'ids' => $sanitizedIds];
+        } catch (\Exception $e) {
+            Logme::warning('Error deleting posts', [
+                'message' => $e->getMessage(),
+                'id' => $sanitizedIds,
+                'time' => date('Y-m-d H:i:s')
+            ]);
+            return ['success' => false, 'message' => 'Error deleting posts. See logs for more details.'];
+        }
+    }
+
 }

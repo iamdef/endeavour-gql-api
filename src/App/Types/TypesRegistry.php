@@ -31,6 +31,8 @@ use App\Types\UserMutationTypes\InputTypes\InputChangePasswordType;
 use App\Types\PostMutationTypes\InputTypes\JSONScalarType;
 use App\Types\PostMutationTypes\ResponseTypes\SavePostResponseType;
 use App\Types\PostMutationTypes\ResponseTypes\IncPostViewResponseType;
+use App\Types\PostMutationTypes\ResponseTypes\ChangePostStatusResponseType;
+use App\Types\PostMutationTypes\ResponseTypes\DeletePostResponseType;
 use App\Types\PostQueryTypes\ResponseTypes\AllPostsResponseType;
 use App\Types\PostQueryTypes\ResponseTypes\PostResponseType;
 
@@ -154,6 +156,14 @@ class TypesRegistry {
 
     public static function incPostViewResponse() {
         return new IncPostViewResponseType;
+    }
+
+    public static function changePostStatusResponse() {
+        return new ChangePostStatusResponseType;
+    }
+
+    public static function deletePostResponse() {
+        return new DeletePostResponseType;
     }
 
     public static function getAllPostsResponse() {

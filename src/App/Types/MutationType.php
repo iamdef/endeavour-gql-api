@@ -130,6 +130,27 @@ class MutationType extends ObjectType
                             return PostResolver::incPostView($args['post_id']);
                         }
                     ],
+                    'changePostStatus' => [
+                        'type' => TypesRegistry::changePostStatusResponse(),
+                        'description' => 'Changing post status',
+                        'args' => [
+                            'ids' => TypesRegistry::listOf(TypesRegistry::id()),
+                            'status' => TypesRegistry::string()
+                        ],
+                        'resolve' => function ($root, $args) {
+                            return PostResolver::changePostStatus($args['ids'], $args['status']);
+                        }
+                    ],
+                    'deletePost' => [
+                        'type' => TypesRegistry::deletePostResponse(),
+                        'description' => 'Deleting post',
+                        'args' => [
+                            'ids' => TypesRegistry::listOf(TypesRegistry::id())
+                        ],
+                        'resolve' => function ($root, $args) {
+                            return PostResolver::deletePost($args['ids']);
+                        }
+                    ],
                 ];
             }
         ];
