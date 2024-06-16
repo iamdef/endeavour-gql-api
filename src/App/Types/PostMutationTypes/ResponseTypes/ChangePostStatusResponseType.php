@@ -32,7 +32,10 @@ class ChangePostStatusResponseType extends ObjectType {
                         'type' => TypesRegistry::string(),
                         'description' => 'Posts status'
                     ],
-
+                    'posts' => [
+                        'type' => TypesRegistry::listOf(TypesRegistry::post()),
+                        'description' => 'Updated posts'
+                    ],
                 ];
             }
         ];

@@ -18,7 +18,7 @@ class PostPreparator {
         $timestamp = $timestamp / 1000;
         $time = new \DateTime("@$timestamp");
         $time->setTimezone(new \DateTimeZone('Europe/Moscow'));
-        $day = $time->format('d');
+        $day = ltrim($time->format('d'), '0');
         $monthsRU = array(
             'Jan' => 'Янв',
             'Feb' => 'Фев',

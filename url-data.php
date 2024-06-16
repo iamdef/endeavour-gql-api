@@ -20,21 +20,30 @@ if ($url) {
 }
 
 function fetchData($url) {
-  // Здесь вы можете использовать любой метод для извлечения данных по URL
-  // Например, с использованием cURL
-  $ch = curl_init($url);
-  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-  $response = curl_exec($ch);
-  curl_close($ch);
 
-  // Здесь можно распарсить $response и извлечь нужные данные (заголовок, описание и т. д.)
-  // В этом примере, возвращаем простой ассоциативный массив
+  $response = file_get_contents($url);
+
+  $title = '';
+  $description = '';
+  $image = '';
+  if (!empty($response)) {
+    // Используем регулярное выражение для поиска тега <title> и его содержимого
+    if (preg_match("/<title>(.*?)<\/title>/i", $response, $matches)) {
+        $title = $matches[1];
+    }
+    if (preg_match('/<meta[^>]+name="description"[^>]+content="([^"]+)"[^>]*>/i', $response, $matches)) {
+      $description = $matches[1];
+    }
+    if (preg_match('/<meta[^>]+property="og:image"[^>]+content="([^"]+)"[^>]*>/i', $response, $matches)) {
+      $image = $matches[1];
+    }
+}
+
   return [
-    'title' => 'CodeX Team',
-    'description' => 'Club of web-development, design and marketing. We build team learning how to build full-valued projects on the world market.',
+    'title' => $title ,
+    'description' => $description,
     'image' => [
-      'url' => 'https://codex.so/public/app/img/meta_img.png',
-    'res' => $response  
-    ],
+      'url' => $image,
+    ]
   ];
 }

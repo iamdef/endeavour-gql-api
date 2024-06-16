@@ -194,6 +194,7 @@ class PostResolver
     {
         $sanitizedIds = array_map('intval', $ids);
         $upd_results = [];
+        $upd_posts = [];
         try {
             foreach ($sanitizedIds as $id) {
                 $upd_res = Database::update(
@@ -203,14 +204,17 @@ class PostResolver
                     ['id' => $id],
                 ); 
                 $upd_results[$id] = $upd_res;
+
+                $get_upd_res = self::getPost($id);
+                $get_upd_res['success'] && array_push($upd_posts, $get_upd_res['post']);
             }
 
-            if (in_array(false, $upd_results, true)) {
-                $errorIds = array_keys($upd_results, false, true);
-                return ['success' => false, 'message' => 'Error when changing status for posts with IDs: ' . implode(', ', $errorIds), 'ids' => $sanitizedIds, 'status' => $status];
-            }
-
-            return ['success' => true, 'message' => 'The post status has been successfully updated', 'ids' => $sanitizedIds, 'status' => $status];
+            // if (in_array(false, $upd_results, true)) {
+            //     $errorIds = array_keys($upd_results, false, true);
+            //     return ['success' => false, 'message' => 'Error when changing status for posts with IDs: ' . implode(', ', $errorIds), 'ids' => $sanitizedIds, 'status' => $status];
+            // }
+            
+            return ['success' => true, 'message' => 'The post status has been successfully updated', 'ids' => $sanitizedIds, 'status' => $status, 'posts' => $upd_posts];
         } catch (\Exception $e) {
             Logme::warning('Error changing post status', [
                 'message' => $e->getMessage(),
