@@ -53,7 +53,8 @@ class PostPreparator {
                 'content' => $content,
                 'theme' => $raw['theme'] ?? $content['theme'],
                 'status' => $raw['status'] ?? $content['status'],
-                'views' => $raw['views'] ?? $content['views']
+                'views' => $raw['views'] ?? $content['views'],
+                'mentioned' => $raw['mentioned'] ?? null
             );
             return self::getPost($post);
         } else {
@@ -68,7 +69,8 @@ class PostPreparator {
                     'content' => $contents[$i],
                     'theme' => $post['theme'],
                     'status' => $post['status'],
-                    'views' => $post['views']
+                    'views' => $post['views'],
+                    'mentioned' => $post['mentioned'] ?? null
                 );
             }, $raw, array_keys($raw));
 
@@ -108,6 +110,7 @@ class PostPreparator {
         $views = $post['views'];
         $status = $post['status'];
         $content = $post['content'];
+        $mentioned = $post['mentioned'];
 
         $media_im = null;
         $caption = null;
@@ -145,6 +148,7 @@ class PostPreparator {
             'media_em' => $media_em,
             'status' => $status,
             'views' => $views,
+            'mentioned' => $mentioned,
         );
 
         return $ready;

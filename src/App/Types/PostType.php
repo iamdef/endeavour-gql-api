@@ -80,6 +80,10 @@ class PostType extends ObjectType {
                         'type' => TypesRegistry::string(),
                         'description' => 'Draft or publicated'
                     ],
+                    'mentioned' => [
+                        'type' => TypesRegistry::listOf(TypesRegistry::user()),
+                        'description' => 'Mentioned users'
+                    ]
                 ];
             }
         ];

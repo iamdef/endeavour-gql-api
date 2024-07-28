@@ -25,8 +25,10 @@ class PostResolver
         $author = $data['author'];
         $theme = $data['theme'];
         $updateId = $data['updateId'];
+        $mentioned = isset($data['mentioned']) ? $data['mentioned'] : [];
 
         try {
+            // saving or updating post
             if ($updateId) {
                 $upd_res = Database::update(
                     'posts',
@@ -37,16 +39,23 @@ class PostResolver
                 if (!$upd_res) return ['success' => false, 'message' => 'Error when saving the updated post', 'id' => (int)$updateId, 'post' => $data];
                 $post_res = self::getPost((int)$updateId);
                 if (!$post_res['success']) ['success' => false, 'message' => 'Error when getting the updated post', 'id' => (int)$updateId, 'post' => $data];
-                return ['success' => true, 'message' => 'The post has been successfully updated', 'id' => (int)$updateId, 'post' => $post_res['post']];
+                $post_id = (int)$updateId;
+            } else {
+                $post_id = Database::insert('posts', [
+                    'author' => $author,
+                    'theme' => $theme,
+                    'status' => 'черновик',
+                    'content' => json_encode($data)
+                ]);
+                if (!$post_id) return ['success' => false, 'message' => 'Error when saving the new post', 'post' => $data];
             }
-            $post_id = Database::insert('posts', [
-                'author' => $author,
-                'theme' => $theme,
-                'status' => 'черновик',
-                'content' => json_encode($data)
-            ]);
+
+            // saving or updating user mentions
+            if ($mentioned) self::saveMentions($mentioned, $post_id);
+
             $post_res = self::getPost($post_id);
             return ['success' => true, 'message' => 'The post has been successfully saved', 'id' => $post_id, 'post' => $post_res['post']];
+
         } catch (\Exception $e) {
             Logme::warning('Error saving the post', [
                 'message' => $e->getMessage(),
@@ -55,6 +64,48 @@ class PostResolver
             ]);
             return ['success' => false, 'message' => 'Error post saving. See logs for more details.'];
         }
+    }
+
+    public static function saveMentions($mentioned, $post_id) {
+
+        try {
+            foreach ($mentioned as $username) {
+
+                $user = Database::selectOne(
+                    'SELECT id FROM user WHERE username = :username',
+                    ['username' => $username]
+                );
+    
+                if (!$user) {
+                    return ['success' => false, 'message' => "User with username $username not found"];
+                }
+                $user_id = $user->id;
+
+                // Check if the user has already been mentioned in this post
+                $exists = Database::selectOne(
+                    'SELECT * FROM post_mentions WHERE post_id = :post_id AND user_id = :user_id',
+                    ['post_id' => $post_id, 'user_id' => $user_id]
+                );
+                if (!$exists) {
+                    $ins_mention_res = Database::insert('post_mentions', [
+                        'post_id' => $post_id,
+                        'user_id' => $user_id
+                    ]);
+                    if (!$ins_mention_res) return ['success' => false, 'message' => 'Error when inserting user mentions', 'id' => $post_id];
+                }
+    
+            }
+    
+            return ['success' => true, 'message' => 'The mentioned users have been successfully saved', 'id' => $post_id];
+        } catch (\Exception $e) {
+            Logme::warning('Error saving the mentioned users', [
+                'message' => $e->getMessage(),
+                'post_id' => $post_id,
+                'time' => date('Y-m-d H:i:s')
+            ]);
+            return ['success' => false, 'message' => 'Error post saving. See logs for more details.'];
+        }
+
     }
 
     public static function getAllPosts($cursor, $limit, $sortDirection, $theme, $status)
@@ -143,11 +194,32 @@ class PostResolver
                 ],
                 'theme' => $post_data->theme,
                 'content' => json_decode($post_data->content, true),
-                'status' => $post_data->status
+                'status' => $post_data->status,
             ];
             $inc = self::incPostView($post['id']);
             $post['views'] = $inc['success'] ? $inc['views'] : $post_data->views;
-            
+
+            // getting mentioned users
+            $mentioned_query = 'SELECT user.username, user.avatar FROM post_mentions
+                LEFT JOIN user ON post_mentions.user_id = user.id
+                WHERE post_mentions.post_id = :post_id';
+
+            $mentioned_users = Database::select($mentioned_query, ['post_id' => $id]);
+
+            if ($mentioned_users) {
+                $mentioned = array_map(function ($user) {
+                    return [
+                    'username' => $user->username,
+                    'avatar' => $user->avatar
+                    ];
+                    }, $mentioned_users);
+        
+                // Adding mentioned users to the post
+                $post['mentioned'] = $mentioned;
+            } else {
+                $post['mentioned'] = null;
+            }
+
             $preparedPost = PostPreparator::prepare($post, true);
 
             return ['success' => true, 'message' => 'Successfull fetched post', 'post' => $preparedPost];
