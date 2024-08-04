@@ -40,17 +40,21 @@ class PostType extends ObjectType {
                         'type' => TypesRegistry::jsonScalar(),
                         'description' => 'Post content'
                     ],
-                    'date' => [
+                    'created_at_date' => [
                         'type' => TypesRegistry::string(),
-                        'description' => 'Date of creation/editing of the post'
+                        'description' => 'Date of creation of the post'
                     ],
-                    'time' => [
+                    'created_at_time' => [
                         'type' => TypesRegistry::string(),
-                        'description' => 'Time of creation/editing of the post'
+                        'description' => 'Time of creation of the post'
                     ],
                     'timestamp' => [
                         'type' => TypesRegistry::string(),
                         'description' => 'Timestamp'
+                    ],
+                    'timestamp_upd' => [
+                        'type' => TypesRegistry::string(),
+                        'description' => 'Timestamp update'
                     ],
                     'images' => [
                         'type' => TypesRegistry::jsonScalar(),
@@ -83,7 +87,7 @@ class PostType extends ObjectType {
                     'mentioned' => [
                         'type' => TypesRegistry::listOf(TypesRegistry::user()),
                         'description' => 'Mentioned users'
-                    ]
+                    ],
                 ];
             }
         ];

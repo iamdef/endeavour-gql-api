@@ -7,6 +7,8 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 require_once 'Vendor/autoload.php';
+
+use DateTime;
 use Dotenv\Dotenv;
 
 $dotenv = Dotenv::createImmutable('Vendor/' . '../');
@@ -26,7 +28,7 @@ class PostPreparator {
             'Apr' => 'Aпр',
             'May' => 'Май',
             'Jun' => 'Июнь',
-            'Jul' => 'Июль',
+            'Jul' => date_default_timezone_get(),
             'Aug' => 'Авг',
             'Sep' => 'Сент',
             'Oct' => 'Окт',
@@ -54,7 +56,9 @@ class PostPreparator {
                 'theme' => $raw['theme'] ?? $content['theme'],
                 'status' => $raw['status'] ?? $content['status'],
                 'views' => $raw['views'] ?? $content['views'],
-                'mentioned' => $raw['mentioned'] ?? null
+                'mentioned' => $raw['mentioned'] ?? null,
+                'created_at' => $raw['created_at'],
+                'updated_at' => $raw['updated_at']
             );
             return self::getPost($post);
         } else {
@@ -70,7 +74,9 @@ class PostPreparator {
                     'theme' => $post['theme'],
                     'status' => $post['status'],
                     'views' => $post['views'],
-                    'mentioned' => $post['mentioned'] ?? null
+                    'mentioned' => $post['mentioned'] ?? null,
+                    'created_at' => $post['created_at'],
+                    'updated_at' => $post['updated_at']
                 );
             }, $raw, array_keys($raw));
 
@@ -96,14 +102,26 @@ class PostPreparator {
         return array_values($images);;
     }
 
-    
-
     public static function getPost($post) {
         $id = $post['id'];
         $author = $post['author'];
-        $timestamp = $post['content']['time'];
-        $time = self::getDate($timestamp, true);
-        $date = self::getDate($timestamp, false);
+
+        // work with date
+        $created_at_str = $post['created_at'];
+        $updated_at_str = $post['updated_at'];
+        // setting timezone
+        $timezone = new \DateTimeZone('Europe/Moscow');
+        $dateTimeCreated = DateTime::createFromFormat('Y-m-d H:i:s', $created_at_str, $timezone);
+        $dateTimeUpdated = DateTime::createFromFormat('Y-m-d H:i:s', $updated_at_str, $timezone);
+        $dateTimeCreated->setTimezone(new \DateTimeZone('UTC'));
+        $dateTimeUpdated->setTimezone(new \DateTimeZone('UTC'));
+
+        $timestamp = $dateTimeCreated->getTimestamp() * 1000; 
+        $timestamp_upd = $dateTimeUpdated->getTimestamp() * 1000;
+
+        $created_at_time = self::getDate((int) strtotime($created_at_str) * 1000, true);
+        $created_at_date = self::getDate((int) strtotime($created_at_str) * 1000, false);
+        
         $blocks = $post['content']['blocks'];
         $images = self::prepareImage($post['content']);
         $theme = $post['theme'];
@@ -134,9 +152,8 @@ class PostPreparator {
         $ready = array(
             'id' => $id,
             'author' => $author,
-            'date' => $date,
-            'time' => $time,
             'timestamp' => $timestamp,
+            'timestamp_upd' => $timestamp_upd,
             'title' => $title,
             'theme' => $theme,
             'paragraph' => $paragraph,
@@ -149,6 +166,8 @@ class PostPreparator {
             'status' => $status,
             'views' => $views,
             'mentioned' => $mentioned,
+            'created_at_time' => $created_at_time,
+            'created_at_date' => $created_at_date,
         );
 
         return $ready;

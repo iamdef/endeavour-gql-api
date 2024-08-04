@@ -52,7 +52,6 @@ class PostResolver
 
             // saving or updating user mentions
             if ($mentioned) self::saveMentions($mentioned, $post_id);
-
             $post_res = self::getPost($post_id);
             return ['success' => true, 'message' => 'The post has been successfully saved', 'id' => $post_id, 'post' => $post_res['post']];
 
@@ -66,11 +65,50 @@ class PostResolver
         }
     }
 
-    public static function saveMentions($mentioned, $post_id) {
-
+    public static function saveMentions($mentioned, $post_id)
+    {
         try {
-            foreach ($mentioned as $username) {
+            // getting the saved mentioned users for this post
+            $currentMentions = Database::select(
+                'SELECT user.username FROM post_mentions
+                LEFT JOIN user ON post_mentions.user_id = user.id
+                WHERE post_mentions.post_id = :post_id',
+                ['post_id' => $post_id]
+            );
 
+            $currentMentions = array_map(function($mention) {
+                return $mention->username;
+            }, $currentMentions);
+
+            // deleting and adding new mentions
+            $mentionsToDelete = array_diff($currentMentions, $mentioned);
+            $mentionsToAdd = array_diff($mentioned, $currentMentions);
+
+            // deleting
+            foreach ($mentionsToDelete as $username) {
+                $user = Database::selectOne(
+                    'SELECT id FROM user WHERE username = :username',
+                    ['username' => $username]
+                );
+    
+                if ($user) {
+                    $user_id = $user->id;
+                    $del_mention_res = Database::delete('post_mentions', [
+                        'post_id' => $post_id,
+                        'user_id' => $user_id
+                    ], [
+                        'post_id' => $post_id,
+                        'user_id' => $user_id
+                    ]);
+    
+                    if (!$del_mention_res) {
+                        return ['success' => false, 'message' => "Error when deleting user mention for $username", 'id' => $post_id];
+                    }
+                }
+            }
+
+            // adding
+            foreach ($mentionsToAdd as $username) {
                 $user = Database::selectOne(
                     'SELECT id FROM user WHERE username = :username',
                     ['username' => $username]
@@ -81,21 +119,20 @@ class PostResolver
                 }
                 $user_id = $user->id;
 
-                // Check if the user has already been mentioned in this post
                 $exists = Database::selectOne(
                     'SELECT * FROM post_mentions WHERE post_id = :post_id AND user_id = :user_id',
                     ['post_id' => $post_id, 'user_id' => $user_id]
                 );
+    
                 if (!$exists) {
                     $ins_mention_res = Database::insert('post_mentions', [
                         'post_id' => $post_id,
                         'user_id' => $user_id
                     ]);
                     if (!$ins_mention_res) return ['success' => false, 'message' => 'Error when inserting user mentions', 'id' => $post_id];
-                }
-    
+                } 
             }
-    
+
             return ['success' => true, 'message' => 'The mentioned users have been successfully saved', 'id' => $post_id];
         } catch (\Exception $e) {
             Logme::warning('Error saving the mentioned users', [
@@ -140,7 +177,9 @@ class PostResolver
             $totalCount = Database::selectOne('SELECT COUNT(*) as total FROM posts' . $whereTotal, $paramsTotal);
 
             // Строим запрос для получения данных
-            $query = 'SELECT posts.id, posts.author, posts.theme, posts.content, posts.status, posts.views, user.avatar
+            $query = 'SELECT posts.id, posts.author, posts.theme,
+                            posts.content, posts.status, posts.views,
+                            posts.created_at, posts.updated_at, user.avatar
                     FROM posts
                     LEFT JOIN user ON posts.author = user.username'
                     . $whereClause . ' ' . $direction . ' LIMIT :limit OFFSET :offset';
@@ -152,7 +191,7 @@ class PostResolver
             $posts = array_map(function($postData) {
                 // Увеличиваем счетчик просмотров
                 $inc = self::incPostView($postData->id);
-                return [
+                $post = [
                     'id' => $postData->id,
                     'author' => [
                         'username' => $postData->author,
@@ -161,9 +200,33 @@ class PostResolver
                     'theme' => $postData->theme,
                     'content' => json_decode($postData->content, true),
                     'status' => $postData->status,
-                    'views' => $inc['success'] ? $inc['views'] : $postData->views
+                    'views' => $inc['success'] ? $inc['views'] : $postData->views,
+                    'created_at' => $postData->created_at,
+                    'updated_at' => $postData->updated_at
                 ];
+
+                // getting mentioned users
+                $mentioned_query = 'SELECT user.username, user.avatar FROM post_mentions
+                LEFT JOIN user ON post_mentions.user_id = user.id
+                WHERE post_mentions.post_id = :post_id';
+                $mentioned_users = Database::select($mentioned_query, ['post_id' => $postData->id]);
+
+                if ($mentioned_users) {
+                    $mentioned = array_map(function ($user) {
+                        return [
+                            'username' => $user->username,
+                            'avatar' => $user->avatar
+                        ];
+                    }, $mentioned_users);
+                    $post['mentioned'] = $mentioned;
+                } else {
+                    $post['mentioned'] = null;
+                }
+    
+                return $post;
+
             }, $postsData);
+
 
             $preparedPosts = PostPreparator::prepare($posts);
 
@@ -180,7 +243,8 @@ class PostResolver
     public static function getPost($id)
     {   
         try {
-            $query = 'SELECT posts.id, posts.author, posts.theme, posts.content, posts.views, posts.status, user.avatar
+            $query = 'SELECT posts.id, posts.author, posts.theme, posts.content,
+                posts.created_at, posts.updated_at, posts.views, posts.status, user.avatar
                 FROM posts
                 LEFT JOIN user ON posts.author = user.username WHERE posts.id = :id';
             $post_data = Database::selectOne($query, ['id' => $id]);
@@ -195,6 +259,8 @@ class PostResolver
                 'theme' => $post_data->theme,
                 'content' => json_decode($post_data->content, true),
                 'status' => $post_data->status,
+                'created_at' => $post_data->created_at,
+                'updated_at' => $post_data->updated_at
             ];
             $inc = self::incPostView($post['id']);
             $post['views'] = $inc['success'] ? $inc['views'] : $post_data->views;
