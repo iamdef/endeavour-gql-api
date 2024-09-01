@@ -145,19 +145,19 @@ class PostResolver
 
     }
 
-    public static function getAllPosts($cursor, $limit, $sortDirection, $theme, $status)
+    public static function getAllPosts($cursor, $limit, $sortDirection, $theme, $status, $person)
     {   
         try {
 
             $direction = $sortDirection === 'old' ? 'ORDER BY posts.id' : 'ORDER BY posts.id DESC';
 
-            // Строим условие WHERE для запроса
-            $whereClause = ' WHERE 1=1'; // Начальное условие
-            $params = ['limit' => (int)$limit, 'offset' => (int)$cursor]; // Параметры для запроса
-            $whereTotal = ' WHERE 1=1'; // Для подсчета общего количества записей
-            $paramsTotal = []; // Параметры для подсчета общего количества записей
+            // create WHERE query
+            $whereClause = ' WHERE 1=1'; // initial WHERE clause
+            $params = ['limit' => (int)$limit, 'offset' => (int)$cursor]; // query params
+            $whereTotal = ' WHERE 1=1'; // calculate total
+            $paramsTotal = []; // params for calculate total
 
-            // Добавляем условие по теме, если оно задано
+            // adding theme filter
             if ($theme !== 'Все') {
                 $whereClause .= ' AND posts.theme = :theme';
                 $params['theme'] = strtolower($theme);
@@ -165,7 +165,7 @@ class PostResolver
                 $paramsTotal['theme'] = strtolower($theme);
             }
 
-            // Добавляем условие по статусу, если он задан
+            // adding status filter
             if ($status !== 'all') {
                 $whereClause .= ' AND posts.status = :status';
                 $params['status'] = $status;
@@ -173,10 +173,39 @@ class PostResolver
                 $paramsTotal['status'] = $status;
             }
 
-            // Получаем общее количество записей
-            $totalCount = Database::selectOne('SELECT COUNT(*) as total FROM posts' . $whereTotal, $paramsTotal);
+            // adding person filter
+            if ($person) {
+                // Join the post_mentions table to filter by mentioned user
+                $whereClause .= ' AND EXISTS (SELECT 1 FROM post_mentions 
+                                                LEFT JOIN user ON post_mentions.user_id = user.id
+                                                WHERE post_mentions.post_id = posts.id
+                                                AND user.username = :person)';
+                $params['person'] = $person;
+            }
 
-            // Строим запрос для получения данных
+            // getting total
+
+            if ($person) {
+
+            $totalCount = Database::selectOne('
+                SELECT COUNT(DISTINCT posts.id) as total
+                FROM posts
+                INNER JOIN post_mentions ON posts.id = post_mentions.post_id
+                INNER JOIN user ON post_mentions.user_id = user.id
+                WHERE user.username = :person
+                AND (:theme = "Все" OR posts.theme = :theme)
+                AND (:status = "all" OR posts.status = :status)
+            ', [
+                'person' => $person,
+                'theme' => $theme,
+                'status' => $status
+            ]);
+
+            } else {
+                $totalCount = Database::selectOne('SELECT COUNT(*) as total FROM posts' . $whereTotal, $paramsTotal);
+            }
+
+            // create query
             $query = 'SELECT posts.id, posts.author, posts.theme,
                             posts.content, posts.status, posts.views,
                             posts.created_at, posts.updated_at, user.avatar
@@ -184,12 +213,11 @@ class PostResolver
                     LEFT JOIN user ON posts.author = user.username'
                     . $whereClause . ' ' . $direction . ' LIMIT :limit OFFSET :offset';
 
-            // Получаем данные постов
             $postsData = Database::select($query, $params);
 
-            // Маппим данные постов
+            // mapping posts
             $posts = array_map(function($postData) {
-                // Увеличиваем счетчик просмотров
+                // incrementing views
                 $inc = self::incPostView($postData->id);
                 $post = [
                     'id' => $postData->id,

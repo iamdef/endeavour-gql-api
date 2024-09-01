@@ -28,7 +28,7 @@ class PostPreparator {
             'Apr' => 'Aпр',
             'May' => 'Май',
             'Jun' => 'Июнь',
-            'Jul' => date_default_timezone_get(),
+            'Jul' => 'Июль',
             'Aug' => 'Авг',
             'Sep' => 'Сент',
             'Oct' => 'Окт',
