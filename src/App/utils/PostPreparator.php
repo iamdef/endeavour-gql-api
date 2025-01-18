@@ -102,6 +102,18 @@ class PostPreparator {
         return array_values($images);;
     }
 
+    public static function getFirstSentence($text) {
+        // find first sentence
+        $pattern = '/.*?[.!?](\s|$)/u';
+        
+        if (preg_match($pattern, $text, $matches)) {
+            return '!'.trim($matches[0]);
+        }
+        
+        // return original text if no sentence found
+        return '!'.$text;
+    }
+
     public static function getPost($post) {
         $id = $post['id'];
         $author = $post['author'];
@@ -154,7 +166,7 @@ class PostPreparator {
             'author' => $author,
             'timestamp' => $timestamp,
             'timestamp_upd' => $timestamp_upd,
-            'title' => $title,
+            'title' => $title ?? self::getFirstSentence($paragraph), // set first sentence as title if no title, ! shows there is no title
             'theme' => $theme,
             'paragraph' => $paragraph,
             'images' => $images,
